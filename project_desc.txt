@@ -30,10 +30,10 @@ Functional Requirements
 •	Issue books to students ✅
 •	View issued books  ✅
 •	Return books and calculate fines ✅
-•	Manage student records
-•	Request approval 
-•	View overdue books and notify students
-•	Logout
+•	Manage student records ✅
+•	Request approval ✅
+•	View overdue books and notify students ✅
+•	Logout  
 3. Students
 •	Borrow books
 •	Return books and pay fines

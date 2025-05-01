@@ -260,6 +260,27 @@ class Librarian
     }
 
 
+    public static void overDueAdd()
+    {
+        String sql =  "UPDATE books " +
+        "SET status = 'overdue' " +
+        "WHERE status != 'returned' AND issue_date < (CURDATE() - INTERVAL 15 DAY)"
+
+        try
+        (
+            Connection con = connect();
+            PreparedStatement pst = con.prepareStatement(sql)
+        ) 
+            {
+                int rows = pst.executeUpdate();
+                System.out.println("Overdue books updated successfully.");
+            } 
+            catch (SQLException e) 
+            {
+                e.printStackTrace();
+            }
+    }
+
     
 
     public static void studentAdd(String name, String password) 
@@ -348,6 +369,128 @@ class Librarian
 
 
 
+    // CREATE TABLE requests (
+    // ->     request_id INT PRIMARY KEY AUTO_INCREMENT,
+    // ->     issue_id INT NOT NULL,
+    // ->     student_id INT NOT NULL,
+    // ->     request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    // ->     status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+
+    // ->     notes TEXT
+    // -> );
+
+
+
+    public static void acceptRequest(int requestId) 
+    {
+        String sql = "UPDATE requests SET status = 'approved' WHERE request_id = ?";
+        try (
+         Connection con = connect();
+         PreparedStatement pst = con.prepareStatement(sql)
+         ) 
+         {
+            pst.setInt(1, requestId);
+            int rows = pst.executeUpdate();
+            System.out.println("Request accepted.");
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+
+    public static void rejectRequest(int requestId) 
+    {
+        String sql = "UPDATE requests SET status = 'rejected' WHERE request_id = ?";
+        try (
+         Connection con = connect();
+         PreparedStatement pst = con.prepareStatement(sql)
+         ) 
+         {
+            pst.setInt(1, requestId);
+            int rows = pst.executeUpdate();
+            System.out.println("Request rejected.");
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public static void allRequest()
+    {
+        String sql = "SELECT * FROM requests";
+        try (
+         Connection con = connect();
+         Statement stmt = con.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)
+         ) 
+         {
+            while (rs.next()) 
+            {
+                System.out.println("Request ID: " + rs.getInt("request_id") + ", Issue ID: " + rs.getInt("issue_id") + ", Student ID: " + rs.getInt("student_id")
+                 + ", Request Date: " + rs.getTimestamp("request_date") + ", Status: " + rs.getString("status") + ", Notes: " + rs.getString("notes"));
+            }
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+
+
+    public static void seeOverdueBooks() 
+    {
+        String sql = "SELECT * FROM issued_books WHERE status = 'overdue'";
+        try (
+         Connection con = connect();
+         Statement stmt = con.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)
+         ) 
+         {
+            while (rs.next()) 
+            {
+                System.out.println("Issue ID: " + rs.getInt("issue_id") + ", Book ID: " + rs.getInt("book_id") + ", Student ID: " + rs.getInt("student_id")
+                 + ", Due Date: " + rs.getDate("due_date") + ", Issue Date: " + rs.getTimestamp("issue_date") + ", Status: " + rs.getString("status"));
+            }
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+
+    public static void notifyStudent(int student_id , int book_id)
+    {
+        String sql = "SELECT * FROM issued_books WHERE student_id = ? AND book_id = ? AND status = 'overdue'";
+        try (
+         Connection con = connect();
+         PreparedStatement pst = con.prepareStatement(sql)
+         ) 
+         {
+            pst.setInt(1, student_id);
+            pst.setInt(2, book_id);
+            ResultSet rs = pst.executeQuery();
+            while (rs.next()) 
+            {
+                System.out.println("Issue ID: " + rs.getInt("issue_id") + ", Book ID: " + rs.getInt("book_id") + ", Student ID: " + rs.getInt("student_id")
+                 + ", Due Date: " + rs.getDate("due_date") + ", Issue Date: " + rs.getTimestamp("issue_date") + ", Status: " + rs.getString("status"));
+            }
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+
+
 
 
 
@@ -377,7 +520,9 @@ class Librarian
         // studentAdd("Aniket Singh Bisht", "Xum94186");
         // studentDisplay("Aniket Singh Bisht", "Xum94186");
         // studentUpdate(3, "Aniket Singh Bisht", "123456789");
-        
+        overDueAdd() ; 
+
+
 
 
 

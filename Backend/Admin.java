@@ -169,16 +169,207 @@ class Admin
 
 
 
+    public static void allFineList() 
+    {
+        String sql = "SELECT fine, student_id, book_id, issue_id FROM issued_books WHERE fine > 0";
+        try (
+            Connection con = connect();
+            Statement stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery(sql)
+        ) 
+        {
+
+            if(!rs.isBeforeFirst()) 
+            {
+                System.out.println("No fines found.");
+                return;
+            }
+            System.out.println("Fines List:");
+            System.out.println("-------------------------------------------------");
+            while (rs.next()) 
+            {
+                System.out.println(
+                    "Issue ID: " + rs.getInt("issue_id") + 
+                    ", Student ID: " + rs.getInt("student_id") + 
+                    ", Book ID: " + rs.getInt("book_id") + 
+                    ", Amount: " + rs.getDouble("fine")
+                );
+            }
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+
+
+    public static void manageAccountLibrarian(int id) 
+    {
+        String sql = "SELECT * FROM librarian WHERE id = ? AND ACTIVE = 1";
+        try (
+            Connection con = connect();
+            PreparedStatement pst = con.prepareStatement(sql)
+        ) 
+        {
+            pst.setInt(1, id);
+            ResultSet rs = pst.executeQuery();
+            if (rs.next()) 
+            {
+                System.out.println("ID: " + rs.getInt("id") + ", Name: " + rs.getString("name") + ", Password: " + rs.getString("password"));
+            } 
+            else 
+            {
+                System.out.println("No Librarian found with ID " + id);
+            }
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
 
 
 
 
+    public static void manageAccountStudent(int id) 
+    {
+        String sql = "SELECT * FROM student WHERE id = ? AND ACTIVE = 1";
+        try (
+            Connection con = connect();
+            PreparedStatement pst = con.prepareStatement(sql)
+        ) 
+        {
+            pst.setInt(1, id);
+            ResultSet rs = pst.executeQuery();
+            if (rs.next()) 
+            {
+                System.out.println("ID: " + rs.getInt("id") + ", Name: " + rs.getString("name") + ", Password: " + rs.getString("password"));
+            } 
+            else 
+            {
+                System.out.println("No Student found with ID " + id);
+            }
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+
+    public static void logout(int id) 
+    {
+        String sql = "UPDATE admin SET login = 0 WHERE id = ?";
+        try (
+            Connection con = connect();
+            PreparedStatement pst = con.prepareStatement(sql)
+        ) 
+        {
+            pst.setInt(1, id); // Assuming you want to log out the librarian with ID 1
+            int rows = pst.executeUpdate();
+            if (rows > 0) 
+            {
+                System.out.println("Librarian logged out.");
+            } 
+            else 
+            {
+                System.out.println("No Admin found with ID " + id);
+            }
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
 
 
 
+    public static void login(int id) 
+    {
+        String sql = "UPDATE admin SET login = 1 WHERE id = ?";
+        try (
+            Connection con = connect();
+            PreparedStatement pst = con.prepareStatement(sql)
+        ) 
+        {
+            pst.setInt(1, id); // Assuming you want to log out the librarian with ID 1
+            int rows = pst.executeUpdate();
+            if (rows > 0) 
+            {
+                System.out.println("Librarian logged in.");
+            } 
+            else 
+            {
+                System.out.println("No Admin found with ID " + id);
+            }
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
 
 
-    
+ 
+
+    public static void generateSystemReport() {
+        try (Connection con = connect()) {
+            // Books Statistics
+            String booksSql = "SELECT COUNT(*) as total_books, " +
+                             "SUM(total_copies) as total_copies, " +
+                             "SUM(available_copies) as available_copies " +
+                             "FROM books";
+            
+            // Users Statistics
+            String usersSql = "SELECT " +
+                             "(SELECT COUNT(*) FROM student) as total_students, " +
+                             "(SELECT COUNT(*) FROM librarian) as total_librarians";
+            
+            // Issued Books Statistics
+            String issuedSql = "SELECT " +
+                              "COUNT(*) as total_issued, " +
+                              "SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue_books, " +
+                              "SUM(fine) as total_fines " +
+                              "FROM issued_books";
+
+            try (Statement stmt = con.createStatement()) {
+                // Print Books Statistics
+                try (ResultSet booksRs = stmt.executeQuery(booksSql)) {
+                    if (booksRs.next()) {
+                        System.out.println("\n=== BOOKS STATISTICS ===");
+                        System.out.println("Total Unique Books: " + booksRs.getInt("total_books"));
+                        System.out.println("Total Copies: " + booksRs.getInt("total_copies"));
+                        System.out.println("Available Copies: " + booksRs.getInt("available_copies"));
+                    }
+                }
+
+                // Print Users Statistics
+                try (ResultSet usersRs = stmt.executeQuery(usersSql)) {
+                    if (usersRs.next()) {
+                        System.out.println("\n=== USERS STATISTICS ===");
+                        System.out.println("Total Students: " + usersRs.getInt("total_students"));
+                        System.out.println("Total Librarians: " + usersRs.getInt("total_librarians"));
+                    }
+                }
+
+                // Print Issued Books Statistics
+                try (ResultSet issuedRs = stmt.executeQuery(issuedSql)) {
+                    if (issuedRs.next()) {
+                        System.out.println("\n=== CIRCULATION STATISTICS ===");
+                        System.out.println("Total Books Issued: " + issuedRs.getInt("total_issued"));
+                        System.out.println("Overdue Books: " + issuedRs.getInt("overdue_books"));
+                        System.out.println("Total Fines Ammount: Rs." + issuedRs.getDouble("total_fines"));
+                    }
+                }
+
+                System.out.println("\n=== REPORT GENERATED ON: " + new java.util.Date() + " ===");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error generating report: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
     public static void main(String[] args) 
     {
@@ -195,7 +386,11 @@ class Admin
         // insertStudent("Sanyam Goyel", 1, "12345");
         // insertStudent("Prantik Sanki", 2, "678910");
         // readStudent();
-        
+        // allFineList() ;
+        // manageAccountStudent(1) ;
+        // login(1) ;
+        // logout(1) ;
+        generateSystemReport() ;
 
     }
 

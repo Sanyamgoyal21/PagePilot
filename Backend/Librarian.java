@@ -119,7 +119,7 @@ class Librarian
     // -> );
 
 
-    
+
 
     public static void bookIssue(int bookId, int studentId) 
     {
@@ -205,6 +205,62 @@ class Librarian
 
 
 
+    public static void returnBook(int issueId, int book_id, int student_id) 
+    {
+        String sql = "UPDATE issued_books SET status = 'returned' WHERE issue_id = ? AND book_id = ? AND student_id = ?";
+        try (
+         Connection con = connect();
+         PreparedStatement pst = con.prepareStatement(sql)
+         ) 
+         {
+            pst.setInt(1, issueId);
+            pst.setInt(2, book_id);
+            pst.setInt(3, student_id);
+            int rows = pst.executeUpdate();
+            System.out.println("Book returned successfully.");
+
+            // Update available copies
+            updateAvailableCopies(issueId, 1);
+            calculateFineCharged(issueId, student_id);
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public static void calculateFineCharged(int issue_id, int student_id)
+    {
+        String sql = "SELECT DATEDIFF(CURRENT_DATE(), due_date) AS days_overdue FROM issued_books WHERE issue_id = ? AND student_id = ?";
+        try (
+         Connection con = connect();
+         PreparedStatement pst = con.prepareStatement(sql)
+         ) 
+         {
+            pst.setInt(1, issue_id);
+            pst.setInt(2, student_id);
+            ResultSet rs = pst.executeQuery();
+            if (rs.next()) 
+            {
+                int daysOverdue = rs.getInt("days_overdue");
+                if (daysOverdue > 0) 
+                {
+                    System.out.println("Fine charged: Rs. " + daysOverdue * 15 );
+                } 
+                else 
+                {
+                    System.out.println("No fine charged.");
+                }
+            }
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+
+
 
 
 
@@ -230,7 +286,9 @@ class Librarian
         // seeBooks();
         // bookIssue(1, 1);
         // readIssuedBooks();
-        bookIssue(2,2); 
+        // bookIssue(2,2); 
+        returnBook(3,2,2) ;
+
 
 
     }

@@ -229,42 +229,44 @@ class Librarian
         }
     }
 
-    public static void calculateFineCharged(int issue_id, int student_id)
-    {
-        String sql = "SELECT DATEDIFF(CURRENT_DATE(), due_date) AS days_overdue FROM issued_books WHERE issue_id = ? AND student_id = ?";
+    public static void calculateFineCharged() {
+        String sql = "SELECT issue_id, student_id, DATEDIFF(CURRENT_DATE(), due_date) AS days_overdue " +
+                     "FROM issued_books WHERE status != 'returned'";
+    
         try (
-         Connection con = connect();
-         PreparedStatement pst = con.prepareStatement(sql)
-         ) 
-         {
-            pst.setInt(1, issue_id);
-            pst.setInt(2, student_id);
-            ResultSet rs = pst.executeQuery();
-            if (rs.next()) 
-            {
+            Connection con = connect();
+            PreparedStatement pst = con.prepareStatement(sql);
+            ResultSet rs = pst.executeQuery()
+        ) {
+            while (rs.next()) {
+                int issueId = rs.getInt("issue_id");
+                int studentId = rs.getInt("student_id");
                 int daysOverdue = rs.getInt("days_overdue");
-                if (daysOverdue > 0) 
-                {
-                    System.out.println("Fine charged: Rs. " + daysOverdue * 15 );
-                } 
-                else 
-                {
-                    System.out.println("No fine charged.");
+    
+                if (daysOverdue > 0) {
+                    int fineAmount = daysOverdue * 15;
+                    System.out.println("Issuance #" + issueId + " | Fine charged: Rs. " + fineAmount);
+    
+                    String updateSql = "UPDATE issued_books SET fine = ? WHERE issue_id = ? AND student_id = ?";
+                    try (PreparedStatement updatePst = con.prepareStatement(updateSql)) {
+                        updatePst.setInt(1, fineAmount);
+                        updatePst.setInt(2, issueId);
+                        updatePst.setInt(3, studentId);
+                        updatePst.executeUpdate();
+                    }
                 }
             }
-        } 
-        catch (SQLException e) 
-        {
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-
+    
 
     public static void overDueAdd()
     {
         String sql =  "UPDATE books " +
         "SET status = 'overdue' " +
-        "WHERE status != 'returned' AND issue_date < (CURDATE() - INTERVAL 15 DAY)"
+        "WHERE status != 'returned' AND issue_date < (CURDATE() - INTERVAL 15 DAY)" ; 
 
         try
         (
@@ -487,6 +489,48 @@ class Librarian
     }
 
 
+//     | name         | id | password | login_status |
+// +--------------+----+----------+--------------+
+// | Sanyam Goyel |  1 | 12345    |            0 |
+
+
+    public static void logout( int id)
+    {
+        String sql = "UPDATE librarian SET login_status = 0 WHERE id = ?";
+        try (
+        Connection con = connect();
+        PreparedStatement pst = con.prepareStatement(sql)
+        ) 
+        {
+            pst.setInt(1, id);
+            int rows = pst.executeUpdate();
+            System.out.println("Librarian logged out.");
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+    
+    public static void login( int id)
+    {
+        String sql = "UPDATE librarian SET login_status = 1 WHERE id = ?";
+        try (
+        Connection con = connect();
+        PreparedStatement pst = con.prepareStatement(sql)
+        ) 
+        {
+            pst.setInt(1, id);
+            int rows = pst.executeUpdate();
+            System.out.println("Librarian logged in.");
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
 
 
 
@@ -520,7 +564,8 @@ class Librarian
         // studentAdd("Aniket Singh Bisht", "Xum94186");
         // studentDisplay("Aniket Singh Bisht", "Xum94186");
         // studentUpdate(3, "Aniket Singh Bisht", "123456789");
-        overDueAdd() ; 
+        // overDueAdd() ; 
+        login(1);
 
 
 

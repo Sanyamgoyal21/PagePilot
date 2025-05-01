@@ -21,7 +21,7 @@ Functional Requirements
 •	Add ✅
     View ✅
     Delete librarians ✅
-•	View fine reports (Individual, Total month-wise)
+•	View fine reports (Individual, Total month-wise) 
 •	Generate overall system reports
 •	Manage user accounts (Activate/Deactivate)
 •	Logout
@@ -33,16 +33,16 @@ Functional Requirements
 •	Manage student records ✅
 •	Request approval ✅
 •	View overdue books and notify students ✅
-•	Logout  
+•	Logout  ✅
 3. Students
-•	Borrow books
-•	Return books and pay fines
-•	View borrowing status
-•	Request new books
-•	Request for hold books ( for a week)
-•	Reissue borrowed books
-•	View notifications (due dates, fines, approvals)
-•	Logout
+•	Borrow books ✅
+•	Return books and pay fines ✅
+•	View borrowing status  ✅
+•	Request new books  ✅
+•	Request for hold books ( for a week)  ✅
+•	Reissue borrowed books ✅
+•	View notifications (due dates, fines, approvals)  ✅
+•	Logout ✅
 
 
 

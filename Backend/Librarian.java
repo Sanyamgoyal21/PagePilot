@@ -260,6 +260,92 @@ class Librarian
     }
 
 
+    
+
+    public static void studentAdd(String name, String password) 
+    {
+        String sql = "INSERT INTO student (name, password) VALUES (? , ?)";
+        try (
+         Connection con = connect();
+         PreparedStatement pst = con.prepareStatement(sql)
+         ) 
+         {
+            pst.setString(1, name);
+            pst.setString(2, password);
+            int rows = pst.executeUpdate();
+            System.out.println("Student Added.");
+            studentDisplay(name, password);
+
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+
+    public static void studentUpdate(int id, String name, String password) 
+    {
+        String sql = "UPDATE student SET name = ?, password = ? WHERE id = ?";
+        try (
+         Connection con = connect();
+         PreparedStatement pst = con.prepareStatement(sql)
+         ) 
+         {
+            pst.setString(1, name);
+            pst.setString(2, password);
+            pst.setInt(3, id);
+            int rows = pst.executeUpdate();
+            System.out.println("Student Updated.");
+            studentDisplay(name, password);
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public static void studentDelete(int id) 
+    {
+        String sql = "DELETE FROM student WHERE id = ?";
+        try (
+         Connection con = connect();
+         PreparedStatement pst = con.prepareStatement(sql)
+         ) 
+         {
+            pst.setInt(1, id);
+            int rows = pst.executeUpdate();
+            System.out.println("Student Deleted.");
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+
+    public static void studentDisplay(String name , String password )
+    {
+        String sql = "SELECT * FROM student WHERE name = ? AND password = ?";
+        try (
+         Connection con = connect();
+         PreparedStatement pst = con.prepareStatement(sql)
+         ) 
+         {
+            pst.setString(1, name);
+            pst.setString(2, password);
+            ResultSet rs = pst.executeQuery();
+            while (rs.next()) 
+            {
+                System.out.println("ID: " + rs.getInt("id") + ", Name: " + rs.getString("name") + ", Password: " + rs.getString("password"));
+            }
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
 
 
 
@@ -287,15 +373,13 @@ class Librarian
         // bookIssue(1, 1);
         // readIssuedBooks();
         // bookIssue(2,2); 
-        returnBook(3,2,2) ;
+        // returnBook(3,2,2) ;
+        // studentAdd("Aniket Singh Bisht", "Xum94186");
+        // studentDisplay("Aniket Singh Bisht", "Xum94186");
+        // studentUpdate(3, "Aniket Singh Bisht", "123456789");
+        
 
 
 
     }
-
-
-
-
-
-
 };

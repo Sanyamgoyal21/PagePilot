@@ -118,6 +118,9 @@ class Librarian
     // -> status ENUM('issued','returned','overdue') DEFAULT 'issued',
     // -> );
 
+
+    
+
     public static void bookIssue(int bookId, int studentId) 
     {
         String sql = "INSERT INTO issued_books (book_id, student_id, due_date) VALUES (?, ?, DATE_ADD(CURRENT_DATE(), INTERVAL 15 DAY))";
@@ -132,7 +135,7 @@ class Librarian
             System.out.println("Book issued successfully.");
 
             // Update available copies
-            // updateAvailableCopies(bookId, -1);
+            updateAvailableCopies(bookId, -1);
         } 
         catch (SQLException e) 
         {
@@ -140,21 +143,21 @@ class Librarian
         }
     }
 
-    // private void updateAvailableCopies(int bookId, int adjustment) {
-    //     String sql = "UPDATE books SET available_copies = available_copies + ? WHERE id = ?";
-    //     try (
-    //      Connection con = connect();
-    //      PreparedStatement pst = con.prepareStatement(sql)
-    //      ) {
-    //         pst.setInt(1, adjustment);
-    //         pst.setInt(2, bookId);
-    //         pst.executeUpdate();
-    //     } 
-    //     catch (SQLException e) 
-    //     {
-    //         e.printStackTrace();
-    //     }
-    // }
+    private static void updateAvailableCopies(int bookId, int adjustment) {
+        String sql = "UPDATE books SET available_copies = available_copies + ? WHERE id = ?";
+        try (
+         Connection con = connect();
+         PreparedStatement pst = con.prepareStatement(sql)
+         ) {
+            pst.setInt(1, adjustment);
+            pst.setInt(2, bookId);
+            pst.executeUpdate();
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
 
 
     public static void readIssuedBooks() 
@@ -179,6 +182,36 @@ class Librarian
     }
 
 
+    public static void returnBook(int issueId) 
+    {
+        String sql = "UPDATE issued_books SET status = 'returned' WHERE issue_id = ?";
+        try (
+         Connection con = connect();
+         PreparedStatement pst = con.prepareStatement(sql)
+         ) 
+         {
+            pst.setInt(1, issueId);
+            int rows = pst.executeUpdate();
+            System.out.println("Book returned successfully.");
+
+            // Update available copies
+            updateAvailableCopies(issueId, 1);
+        } 
+        catch (SQLException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -196,7 +229,9 @@ class Librarian
         // deleteBooks(1);
         // seeBooks();
         // bookIssue(1, 1);
-        readIssuedBooks();
+        // readIssuedBooks();
+        bookIssue(2,2); 
+
 
     }
 
@@ -205,4 +240,4 @@ class Librarian
 
 
 
-}
+};

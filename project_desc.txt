@@ -29,7 +29,7 @@ Functional Requirements
 •	Add/View/Delete books ✅
 •	Issue books to students ✅
 •	View issued books  ✅
-•	Return books and calculate fines
+•	Return books and calculate fines  
 •	Manage student records
 •	Request approval 
 •	View overdue books and notify students

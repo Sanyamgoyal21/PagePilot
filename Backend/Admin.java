@@ -3,7 +3,7 @@ import java.util.* ;
 import java.sql.*;
 
 
-class Admin
+public class Admin
 {
     
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";

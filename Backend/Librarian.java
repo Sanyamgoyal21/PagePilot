@@ -2,7 +2,7 @@ package Backend ;
 import java.util.* ; 
 import java.sql.*;
 
-class Librarian
+public class Librarian
 {
 
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";

@@ -1,6 +1,7 @@
 package Frontend;
-
 import Backend.Student;
+import Backend.Librarian;
+import Backend.Admin;
 import javax.swing.*;
 import java.awt.event.*;
 import java.awt.*;
@@ -53,7 +54,7 @@ public class LoginPanel {
                         loginSuccess = Student.login(username, password);
                         break;
                     case "Librarian":
-                        // Add Librarian login logic here
+                        loginSuccess = Librarian.login(username, password);
                         break;
                     case "Admin":
                         // Add Admin login logic here
@@ -62,6 +63,9 @@ public class LoginPanel {
                 
                 if(loginSuccess) {
                     successLabel.setText("Login successful as " + selectedRole + "!");
+                    // Proceed to the next screen or functionality based on role
+                    // For example, you can open a new JFrame or redirect to another panel
+
                 } else {
                     successLabel.setText("Invalid username or password.");
                 }

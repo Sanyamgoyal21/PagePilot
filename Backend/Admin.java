@@ -9,7 +9,7 @@ class Admin
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
-    static final String PASS = "Sanki@2004";
+    static final String PASS = "";
 
     // Establish connection
     public static Connection connect() throws SQLException {

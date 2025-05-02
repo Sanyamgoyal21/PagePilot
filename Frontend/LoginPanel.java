@@ -8,7 +8,6 @@ import java.awt.*;
 public class LoginPanel {
     private static void placeComponents(JPanel panel) {
         panel.setLayout(null);
-
         JLabel userLabel = new JLabel("User");
         JLabel passwordLabel = new JLabel("Password");
         JLabel roleLabel = new JLabel("Role");

@@ -63,19 +63,29 @@ public class AdminPanel {
             JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
             splitPane.setDividerLocation(400); // Set initial divider position
 
-            // Left panel for adding a librarian
-            JPanel addLibrarianPanel = new JPanel();
-            addLibrarianPanel.setLayout(new GridLayout(5, 2, 10, 10)); // 5 rows, 2 columns, spacing of 10px
-            addLibrarianPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            // Left panel with CardLayout for options
+            JPanel leftPanel = new JPanel(new CardLayout());
+            JPanel optionsPanel = new JPanel(new GridLayout(3, 1, 10, 10)); // 3 buttons with spacing
+            JButton viewButton = new JButton("View Librarians");
+            JButton addButton = new JButton("Add Librarian");
+            JButton deleteButton = new JButton("Delete Librarian");
+            optionsPanel.add(viewButton);
+            optionsPanel.add(addButton);
+            optionsPanel.add(deleteButton);
 
+            // Add options panel to the left panel
+            leftPanel.add(optionsPanel, "Options");
+
+            // Add panel for adding a librarian
+            JPanel addLibrarianPanel = new JPanel(new GridLayout(6, 2, 10, 10));
+            addLibrarianPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
             JLabel nameLabel = new JLabel("Name:");
             JTextField nameField = new JTextField(20);
             JLabel idLabel = new JLabel("ID:");
             JTextField idField = new JTextField(20);
             JLabel passwordLabel = new JLabel("Password:");
             JPasswordField passwordField = new JPasswordField(20);
-            JButton addButton = new JButton("Add Librarian");
-
+            JButton submitAddButton = new JButton("Submit");
             addLibrarianPanel.add(nameLabel);
             addLibrarianPanel.add(nameField);
             addLibrarianPanel.add(idLabel);
@@ -83,7 +93,20 @@ public class AdminPanel {
             addLibrarianPanel.add(passwordLabel);
             addLibrarianPanel.add(passwordField);
             addLibrarianPanel.add(new JLabel()); // Empty cell for spacing
-            addLibrarianPanel.add(addButton);
+            addLibrarianPanel.add(submitAddButton);
+            leftPanel.add(addLibrarianPanel, "Add");
+
+            // Add panel for deleting a librarian
+            JPanel deleteLibrarianPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+            deleteLibrarianPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            JLabel deleteIdLabel = new JLabel("ID:");
+            JTextField deleteIdField = new JTextField(20);
+            JButton submitDeleteButton = new JButton("Submit");
+            deleteLibrarianPanel.add(deleteIdLabel);
+            deleteLibrarianPanel.add(deleteIdField);
+            deleteLibrarianPanel.add(new JLabel()); // Empty cell for spacing
+            deleteLibrarianPanel.add(submitDeleteButton);
+            leftPanel.add(deleteLibrarianPanel, "Delete");
 
             // Right panel for displaying current librarians
             JPanel viewLibrariansPanel = new JPanel(new BorderLayout());
@@ -93,35 +116,63 @@ public class AdminPanel {
             viewLibrariansPanel.add(scrollPane, BorderLayout.CENTER);
 
             // Add panels to the split pane
-            splitPane.setLeftComponent(addLibrarianPanel);
+            splitPane.setLeftComponent(leftPanel);
             splitPane.setRightComponent(viewLibrariansPanel);
 
             // Add the split pane to the librarian panel
             librarianPanel.setLayout(new BorderLayout());
             librarianPanel.add(splitPane, BorderLayout.CENTER);
 
-            // Fetch and display current librarians
-            Admin admin = new Admin();
-            librarianListArea.setText("Current Librarians:\n");
-            librarianListArea.append("ID\tName\tPassword\n");
-            librarianListArea.append("---------------------------------\n");
-            String sql = "SELECT * FROM librarian";
-            try {
-                try (Connection con = Admin.connect();
-                        Statement stmt = con.createStatement();
-                        ResultSet rs = stmt.executeQuery(sql)) {
-                    while (rs.next()) {
-                        librarianListArea.append(rs.getInt("id") + "\t" +
-                                rs.getString("name") + "\t" +
-                                rs.getString("password") + "\n");
+            // CardLayout for switching between options
+            CardLayout leftCardLayout = (CardLayout) leftPanel.getLayout();
+
+            // Add functionality to the "View Librarians" button
+            viewButton.addActionListener(viewEvent -> {
+                leftCardLayout.show(leftPanel, "Options");
+                librarianListArea.setText("Current Librarians:\n");
+                librarianListArea.append("ID\tName\tPassword\n");
+                librarianListArea.append("---------------------------------\n");
+                String sql = "SELECT * FROM librarian";
+                try {
+                    try (Connection con = Admin.connect();
+                            Statement stmt = con.createStatement();
+                            ResultSet rs = stmt.executeQuery(sql)) {
+                        while (rs.next()) {
+                            librarianListArea.append(rs.getInt("id") + "\t" +
+                                    rs.getString("name") + "\t" +
+                                    rs.getString("password") + "\n");
+                        }
                     }
+                } catch (SQLException ex) {
+                    librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
                 }
-            } catch (SQLException ex) {
-                librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
-            }
+            });
 
             // Add functionality to the "Add Librarian" button
             addButton.addActionListener(addEvent -> {
+                leftCardLayout.show(leftPanel, "Add"); // Show the Add Librarian form
+                librarianListArea.setText("Current Librarians:\n");
+                librarianListArea.append("ID\tName\tPassword\n");
+                librarianListArea.append("---------------------------------\n");
+
+                // Fetch and display current librarians
+                String sql = "SELECT * FROM librarian";
+                try {
+                    try (Connection con = Admin.connect();
+                            Statement stmt = con.createStatement();
+                            ResultSet rs = stmt.executeQuery(sql)) {
+                        while (rs.next()) {
+                            librarianListArea.append(rs.getInt("id") + "\t" +
+                                    rs.getString("name") + "\t" +
+                                    rs.getString("password") + "\n");
+                        }
+                    }
+                } catch (SQLException ex) {
+                    librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
+                }
+            });
+
+            submitAddButton.addActionListener(submitAddEvent -> {
                 String name = nameField.getText().trim();
                 String idStr = idField.getText().trim();
                 String password = new String(passwordField.getPassword()).trim();
@@ -133,13 +184,15 @@ public class AdminPanel {
 
                 try {
                     int id = Integer.parseInt(idStr);
-                    admin.insertLibrarian(name, id, password);
-                    JOptionPane.showMessageDialog(null, "Librarian added successfully!");
+                    Admin admin = new Admin();
+                    admin.insertLibrarian(name, id, password); // Add librarian to the database
+                    JOptionPane.showMessageDialog(null, "Librarian added successfully!"); // Show success message
 
                     // Refresh the librarian list
                     librarianListArea.setText("Current Librarians:\n");
                     librarianListArea.append("ID\tName\tPassword\n");
                     librarianListArea.append("---------------------------------\n");
+                    String sql = "SELECT * FROM librarian";
                     try (Connection con = Admin.connect();
                             Statement stmt = con.createStatement();
                             ResultSet rs = stmt.executeQuery(sql)) {
@@ -154,6 +207,29 @@ public class AdminPanel {
                             JOptionPane.ERROR_MESSAGE);
                 } catch (SQLException ex) {
                     JOptionPane.showMessageDialog(null, "Error adding librarian: " + ex.getMessage(), "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            });
+
+            // Add functionality to the "Delete Librarian" button
+            deleteButton.addActionListener(deleteEvent -> leftCardLayout.show(leftPanel, "Delete"));
+
+            submitDeleteButton.addActionListener(submitDeleteEvent -> {
+                String idStr = deleteIdField.getText().trim();
+                if (idStr.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "ID is required to delete a librarian!", "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                try {
+                    int id = Integer.parseInt(idStr);
+                    Admin admin = new Admin();
+                    admin.deleteLibrarian(id);
+                    JOptionPane.showMessageDialog(null, "Librarian deleted successfully!");
+                    viewButton.doClick(); // Refresh the list
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(null, "Invalid ID format. Please enter a number.", "Error",
                             JOptionPane.ERROR_MESSAGE);
                 }
             });

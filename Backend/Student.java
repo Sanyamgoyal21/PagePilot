@@ -3,7 +3,7 @@ import java.sql.*;
 import java.util.Scanner;
 import java.util.*;
 
-class Student {
+public class Student {
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
@@ -14,28 +14,33 @@ class Student {
         return DriverManager.getConnection(DB_URL, USER, PASS);
     }
 
-    public static void login(String username, String password) {
-        try (Connection conn = connect()) {
-            String sql = "SELECT * FROM student WHERE name = ? AND password = ?";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
+
+    public static boolean login(String username, String password) {
+        String sql = "SELECT * FROM student WHERE name = ? AND password = ?";
+        String updateSql = "UPDATE student SET login_status = 1 WHERE name = ?";
+    
+        try (Connection conn = connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+    
             pstmt.setString(1, username);
             pstmt.setString(2, password);
             ResultSet rs = pstmt.executeQuery();
+    
             if (rs.next()) {
-                System.out.println("Login successful!");
-
-                String updateSql = "UPDATE student SET login_status = 1 WHERE name = ? AND password = ?";
-                PreparedStatement updateStmt = conn.prepareStatement(updateSql);
-                updateStmt.setString(1, username);
-                updateStmt.setString(2, password);
-                updateStmt.executeUpdate();
+                try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                    updateStmt.setString(1, username);
+                    updateStmt.executeUpdate();
+                }
+                return true;
             } else {
-                System.out.println("Invalid username or password.");
+                return false;
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
     }
+    
 
     public static void logout(String username, String password) {
         try (Connection conn = connect()) {
@@ -287,17 +292,17 @@ class Student {
 
 
 
-    public static void main(String[] args) {
-        // Example usage
-        // login("Sanyam Goyel", "12345");
-        // bookIssue(2, 1);
-        // bookReturn(2, 1, 7);        
-        // bookReturn(1, 1, 1);
-        // viewIssuedBooks(1) ;
-        // requestHoldBook("New Book Title", "New Author", 1);
-        // renewBook(2,1) ;
-        viewNotification(1) ;
+    // public static void main(String[] args) {
+    //     // Example usage
+    //     // login("Sanyam Goyel", "12345");
+    //     // bookIssue(2, 1);
+    //     // bookReturn(2, 1, 7);        
+    //     // bookReturn(1, 1, 1);
+    //     // viewIssuedBooks(1) ;
+    //     // requestHoldBook("New Book Title", "New Author", 1);
+    //     // renewBook(2,1) ;
+    //     viewNotification(1) ;
 
 
-    }
+    // }
 }

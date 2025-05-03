@@ -130,15 +130,28 @@ public class Admin {
         }
     }
 
+    public void insertStudent(String name, String email, String phone, String password) {
+        String sql = "INSERT INTO student (name, email, phone, password) VALUES (?, ?, ?, ?)";
+        try (Connection con = connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setString(1, name);
+            pst.setString(2, email);
+            pst.setString(3, phone);
+            pst.setString(4, password);
+            pst.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error adding student: " + e.getMessage());
+        }
+    }
+
     public String getStudentDetails(Integer id) {
         StringBuilder result = new StringBuilder();
-        String sql = id == null ? "SELECT s.id, s.name, s.active, IFNULL(SUM(ib.fine), 0) AS total_fine " +
-                "FROM student s LEFT JOIN issued_books ib ON s.id = ib.student_id GROUP BY s.id"
-                : "SELECT s.id, s.name, s.active, IFNULL(SUM(ib.fine), 0) AS total_fine " +
-                        "FROM student s LEFT JOIN issued_books ib ON s.id = ib.student_id WHERE s.id = ? GROUP BY s.id";
+        String sql = id == null
+                ? "SELECT id, name, email, phone, active FROM student"
+                : "SELECT id, name, email, phone, active FROM student WHERE id = ?";
 
-        try (
-                Connection con = connect();
+        try (Connection con = connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             if (id != null) {
                 pst.setInt(1, id);
@@ -147,8 +160,9 @@ public class Admin {
             while (rs.next()) {
                 result.append("ID: ").append(rs.getInt("id"))
                         .append(", Name: ").append(rs.getString("name"))
+                        .append(", Email: ").append(rs.getString("email"))
+                        .append(", Phone: ").append(rs.getString("phone"))
                         .append(", Active: ").append(rs.getBoolean("active") ? "Yes" : "No")
-                        .append(", Total Fine: Rs. ").append(rs.getDouble("total_fine"))
                         .append("\n");
             }
         } catch (SQLException e) {

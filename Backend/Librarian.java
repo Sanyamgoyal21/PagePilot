@@ -2,6 +2,9 @@ package Backend;
 
 import java.util.*;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 import javax.swing.JOptionPane;
 
 public class Librarian {
@@ -54,6 +57,23 @@ public class Librarian {
         return false; // Operation failed
     }
 
+    // Add Student
+    public boolean addStudent(String name, String email, String phone, String password) {
+        String sql = "INSERT INTO student (name, email, phone, password, active) VALUES (?, ?, ?, ?, TRUE)";
+        try (Connection con = Database.connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setString(1, name);
+            pst.setString(2, email);
+            pst.setString(3, phone);
+            pst.setString(4, password);
+            pst.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     // View Books
     public ResultSet viewBooks(String searchBy, String value) {
         String sql = "SELECT * FROM books";
@@ -82,6 +102,145 @@ public class Librarian {
             e.printStackTrace();
         }
         return null;
+    }
+
+    // View Issued Books
+    public ResultSet viewIssuedBooks(String searchBy, String value) {
+        String sql = "SELECT issued_books.issue_id, issued_books.book_id, books.title, books.author, " +
+                "issued_books.student_id, issued_books.issue_date, issued_books.due_date, " +
+                "issued_books.fine, issued_books.status " +
+                "FROM issued_books " +
+                "JOIN books ON issued_books.book_id = books.id";
+
+        if (searchBy != null && value != null) {
+            switch (searchBy) {
+                case "student_id":
+                    sql += " WHERE issued_books.student_id = ?";
+                    break;
+                case "book_id":
+                    sql += " WHERE issued_books.book_id = ?";
+                    break;
+                case "title":
+                    sql += " WHERE books.title LIKE ?";
+                    break;
+                case "author":
+                    sql += " WHERE books.author LIKE ?";
+                    break;
+                case "status":
+                    sql += " WHERE issued_books.status = ?";
+                    break;
+            }
+        }
+
+        try {
+            Connection con = Database.connect();
+            PreparedStatement pst = con.prepareStatement(sql);
+
+            // Set the parameter if searchBy and value are provided
+            if (searchBy != null && value != null) {
+                if (searchBy.equals("title") || searchBy.equals("author")) {
+                    pst.setString(1, "%" + value + "%"); // Use LIKE for title and author
+                } else {
+                    pst.setString(1, value); // Use exact match for other fields
+                }
+            }
+
+            return pst.executeQuery();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // View Overdue Books
+    public List<Object[]> viewOverdueBooks(String searchBy, String value) {
+        String sql = "SELECT issued_books.issue_id, issued_books.book_id, books.title, books.author, " +
+                "issued_books.student_id, issued_books.issue_date, issued_books.due_date, issued_books.fine " +
+                "FROM issued_books " +
+                "JOIN books ON issued_books.book_id = books.id " +
+                "WHERE issued_books.status = 'overdue'";
+
+        if (searchBy != null && value != null) {
+            switch (searchBy) {
+                case "book_id":
+                    sql += " AND issued_books.book_id = ?";
+                    break;
+                case "title":
+                    sql += " AND books.title LIKE ?";
+                    break;
+                case "author":
+                    sql += " AND books.author LIKE ?";
+                    break;
+            }
+        }
+
+        List<Object[]> overdueBooks = new ArrayList<>();
+        try (Connection con = Database.connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            if (searchBy != null && value != null) {
+                if (searchBy.equals("title") || searchBy.equals("author")) {
+                    pst.setString(1, "%" + value + "%"); // Use LIKE for title and author
+                } else {
+                    pst.setString(1, value); // Use exact match for other fields
+                }
+            }
+
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    overdueBooks.add(new Object[] {
+                            rs.getInt("issue_id"),
+                            rs.getInt("book_id"),
+                            rs.getString("title"),
+                            rs.getString("author"),
+                            rs.getInt("student_id"),
+                            rs.getDate("issue_date"),
+                            rs.getDate("due_date"),
+                            rs.getInt("fine")
+                    });
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return overdueBooks;
+    }
+
+    // View Students
+    public List<Object[]> viewStudents(String searchBy, String value) {
+        String sql = "SELECT s.id AS student_id, s.name, s.email, s.phone, s.active, " +
+                "IFNULL(SUM(ib.fine), 0) AS total_fine " +
+                "FROM student s " +
+                "LEFT JOIN issued_books ib ON s.id = ib.student_id";
+
+        if (searchBy != null && value != null) {
+            sql += " WHERE s." + searchBy + " = ?";
+        }
+
+        sql += " GROUP BY s.id";
+
+        List<Object[]> studentData = new ArrayList<>();
+        try (Connection con = Database.connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            if (searchBy != null && value != null) {
+                pst.setString(1, value);
+            }
+
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    studentData.add(new Object[] {
+                            rs.getInt("student_id"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("phone"),
+                            rs.getBoolean("active") ? "Yes" : "No",
+                            rs.getDouble("total_fine")
+                    });
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return studentData;
     }
 
     // Delete Book by ID
@@ -116,10 +275,10 @@ public class Librarian {
         }
     }
 
-    public boolean issueBookToStudent(int bookId, int studentId, String dueDate) {
+    public boolean issueBookToStudent(int bookId, int studentId) {
         String checkStudentSql = "SELECT active FROM student WHERE id = ?";
         String checkBookSql = "SELECT available_copies FROM books WHERE id = ?";
-        String issueBookSql = "INSERT INTO issued_books (book_id, student_id, due_date) VALUES (?, ?, ?)";
+        String issueBookSql = "INSERT INTO issued_books (book_id, student_id, issue_date, due_date, status) VALUES (?, ?, ?, ?, ?)";
         String updateBookSql = "UPDATE books SET available_copies = available_copies - 1 WHERE id = ?";
 
         try (Connection con = connect();
@@ -152,10 +311,17 @@ public class Librarian {
                 return false; // Book not found
             }
 
+            // Calculate the issue date and due date
+            LocalDate issueDate = LocalDate.now();
+            LocalDate dueDate = issueDate.plusDays(30); // Add 30 days to the issue date
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
             // Issue the book
             issueBookPst.setInt(1, bookId);
             issueBookPst.setInt(2, studentId);
-            issueBookPst.setString(3, dueDate);
+            issueBookPst.setString(3, issueDate.format(formatter)); // Set the issue date
+            issueBookPst.setString(4, dueDate.format(formatter)); // Set the due date
+            issueBookPst.setString(5, "issued"); // Set the status to issued
             issueBookPst.executeUpdate();
 
             // Update the available copies of the book
@@ -169,6 +335,59 @@ public class Librarian {
             e.printStackTrace();
         }
         return false; // Operation failed
+    }
+
+    public boolean returnBook(int issueId, int bookId, int fine) {
+        String updateStatusSql = "UPDATE issued_books SET status = 'returned', fine = ? WHERE issue_id = ?";
+        String updateBookSql = "UPDATE books SET available_copies = available_copies + 1 WHERE id = ?";
+
+        try (Connection con = connect();
+                PreparedStatement updateStatusPst = con.prepareStatement(updateStatusSql);
+                PreparedStatement updateBookPst = con.prepareStatement(updateBookSql)) {
+
+            // Update the status and fine for the issued book
+            updateStatusPst.setInt(1, fine);
+            updateStatusPst.setInt(2, issueId);
+            updateStatusPst.executeUpdate();
+
+            // Increment the available copies of the book
+            updateBookPst.setInt(1, bookId);
+            updateBookPst.executeUpdate();
+
+            return true; // Book returned successfully
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false; // Operation failed
+    }
+
+    public boolean updateBookStatus(int issueId, String status) {
+        String sql = "UPDATE issued_books SET status = ? WHERE issue_id = ?";
+        try (Connection con = connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setString(1, status);
+            pst.setInt(2, issueId);
+            pst.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateStudentActiveStatus(int studentId, boolean isActive) {
+        String sql = "UPDATE student SET active = ? WHERE id = ?";
+
+        try (Connection con = Database.connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setBoolean(1, isActive);
+            pst.setInt(2, studentId);
+            pst.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public static void main(String[] args) {

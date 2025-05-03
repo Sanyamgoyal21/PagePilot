@@ -352,23 +352,27 @@ public class AdminPanel {
             cardLayout.show(contentPanel, "Student");
             studentPanel.removeAll(); // Clear the panel before adding new components
             studentPanel.setLayout(new BorderLayout());
-        
+
             // Create buttons for Student and Librarian
-            JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 10));
+            JPanel buttonPanel = new JPanel(new GridLayout(1, 4, 10, 10));
             JButton studentButton = new JButton("Manage Students");
             JButton librarianButton = new JButton("Manage Librarians");
+            JButton addStudentButton = new JButton("Add Student");
+            JButton viewStudentsButton = new JButton("View Students");
             buttonPanel.add(studentButton);
             buttonPanel.add(librarianButton);
-        
+            buttonPanel.add(addStudentButton);
+            buttonPanel.add(viewStudentsButton);
+
             // Create a text area to display details
             JTextArea detailsArea = new JTextArea();
             detailsArea.setEditable(false);
             JScrollPane scrollPane = new JScrollPane(detailsArea);
-        
+
             // Add components to the student panel
             studentPanel.add(buttonPanel, BorderLayout.NORTH);
             studentPanel.add(scrollPane, BorderLayout.CENTER);
-        
+
             // Add functionality to the "Student" button
             studentButton.addActionListener(studentEvent -> {
                 String idStr = JOptionPane.showInputDialog("Enter Student ID (Leave blank to view all):");
@@ -382,14 +386,15 @@ public class AdminPanel {
                         return;
                     }
                 }
-        
+
                 Admin admin = new Admin();
                 String studentDetails = admin.getStudentDetails(id);
                 detailsArea.setText("=== Student Details ===\n\n" + studentDetails);
-        
+
                 // Option to toggle account status
                 if (id != null) {
-                    int choice = JOptionPane.showConfirmDialog(null, "Do you want to toggle the active status of this account?",
+                    int choice = JOptionPane.showConfirmDialog(null,
+                            "Do you want to toggle the active status of this account?",
                             "Toggle Account Status", JOptionPane.YES_NO_OPTION);
                     if (choice == JOptionPane.YES_OPTION) {
                         boolean currentStatus = studentDetails.contains("Active: Yes");
@@ -403,7 +408,7 @@ public class AdminPanel {
                     }
                 }
             });
-        
+
             // Add functionality to the "Librarian" button
             librarianButton.addActionListener(librarianEvent -> {
                 String idStr = JOptionPane.showInputDialog("Enter Librarian ID (Leave blank to view all):");
@@ -417,14 +422,15 @@ public class AdminPanel {
                         return;
                     }
                 }
-        
+
                 Admin admin = new Admin();
                 String librarianDetails = admin.getLibrarianDetails(id);
                 detailsArea.setText("=== Librarian Details ===\n\n" + librarianDetails);
-        
+
                 // Option to toggle account status
                 if (id != null) {
-                    int choice = JOptionPane.showConfirmDialog(null, "Do you want to toggle the active status of this account?",
+                    int choice = JOptionPane.showConfirmDialog(null,
+                            "Do you want to toggle the active status of this account?",
                             "Toggle Account Status", JOptionPane.YES_NO_OPTION);
                     if (choice == JOptionPane.YES_OPTION) {
                         boolean currentStatus = librarianDetails.contains("Active: Yes");
@@ -438,7 +444,66 @@ public class AdminPanel {
                     }
                 }
             });
-        
+
+            // Add functionality to the "Add Student" button
+            addStudentButton.addActionListener(e1 -> {
+                JTextField nameField = new JTextField();
+                JTextField emailField = new JTextField();
+                JTextField phoneField = new JTextField();
+                JPasswordField passwordField = new JPasswordField();
+
+                JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10));
+                panel.add(new JLabel("Name:"));
+                panel.add(nameField);
+                panel.add(new JLabel("Email:"));
+                panel.add(emailField);
+                panel.add(new JLabel("Phone:"));
+                panel.add(phoneField);
+                panel.add(new JLabel("Password:"));
+                panel.add(passwordField);
+
+                int result = JOptionPane.showConfirmDialog(null, panel, "Add Student", JOptionPane.OK_CANCEL_OPTION);
+                if (result == JOptionPane.OK_OPTION) {
+                    String name = nameField.getText().trim();
+                    String email = emailField.getText().trim();
+                    String phone = phoneField.getText().trim();
+                    String password = new String(passwordField.getPassword()).trim();
+
+                    if (name.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "All fields are required!", "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    Admin admin = new Admin();
+                    try {
+                        admin.insertStudent(name, email, phone, password);
+                        JOptionPane.showMessageDialog(null, "Student added successfully!", "Success",
+                                JOptionPane.INFORMATION_MESSAGE);
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(null, "Error adding student: " + ex.getMessage(), "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            });
+
+            // Add functionality to the "View Students" button
+            viewStudentsButton.addActionListener(e2 -> {
+                JTextArea studentListArea = new JTextArea();
+                studentListArea.setEditable(false);
+                JScrollPane studentScrollPane = new JScrollPane(studentListArea);
+
+                Admin admin = new Admin();
+                try {
+                    String studentDetails = admin.getStudentDetails(null); // Fetch all students
+                    studentListArea.setText("=== Student List ===\n\n" + studentDetails);
+                } catch (Exception ex) {
+                    studentListArea.setText("Error fetching student data: " + ex.getMessage());
+                }
+
+                JOptionPane.showMessageDialog(null, scrollPane, "Student List", JOptionPane.INFORMATION_MESSAGE);
+            });
+
             studentPanel.revalidate();
             studentPanel.repaint();
         });

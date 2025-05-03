@@ -29,6 +29,33 @@ public class Database {
         }
     }
 
+    public ResultSet viewStudents(String searchBy, String value) {
+        String sql = "SELECT s.id AS student_id, s.name, s.email, s.phone, s.active, " +
+                "IFNULL(SUM(ib.fine), 0) AS total_fine " +
+                "FROM student s " +
+                "LEFT JOIN issued_books ib ON s.id = ib.student_id";
+
+        if (searchBy != null && value != null) {
+            sql += " WHERE s." + searchBy + " = ?";
+        }
+
+        sql += " GROUP BY s.id";
+
+        try {
+            Connection con = Database.connect();
+            PreparedStatement pst = con.prepareStatement(sql);
+
+            if (searchBy != null && value != null) {
+                pst.setString(1, value);
+            }
+
+            return pst.executeQuery();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     // Main method to create the database and tables
     public static void main(String[] args) {
         try {
@@ -63,8 +90,10 @@ public class Database {
 
                 String createTableStudent = "CREATE TABLE IF NOT EXISTS student (" +
                         "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
-                        "name VARCHAR(100)," +
-                        "password VARCHAR(50)," +
+                        "name VARCHAR(100) NOT NULL," +
+                        "email VARCHAR(100) NOT NULL," +
+                        "phone VARCHAR(15) NOT NULL," +
+                        "password VARCHAR(50) NOT NULL," +
                         "login_status BOOLEAN DEFAULT FALSE," +
                         "active BOOLEAN DEFAULT TRUE" +
                         ");";

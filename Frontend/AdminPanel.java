@@ -136,9 +136,11 @@ public class AdminPanel {
                 librarianListArea.setText("Current Librarians:\n");
                 librarianListArea.append("ID\tName\tPassword\n");
                 librarianListArea.append("---------------------------------\n");
+            
                 Admin admin = new Admin();
                 try {
-                    admin.readLibrarian(); // Fetch and display current librarians
+                    String librarianData = admin.readLibrarian(); // Fetch librarian data
+                    librarianListArea.append(librarianData); // Display the data in the text area
                 } catch (Exception ex) {
                     librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
                 }

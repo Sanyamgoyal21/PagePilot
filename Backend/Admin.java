@@ -61,26 +61,44 @@ public class Admin
         }
     }
 
-
-    public   void readLibrarian() 
-    {
+    public String readLibrarian() {
+        StringBuilder result = new StringBuilder();
         String sql = "SELECT * FROM librarian";
         try (
-         Connection con = connect();
-         Statement stmt = con.createStatement();
-         ResultSet rs = stmt.executeQuery(sql)
-         ) 
-         {
-            while (rs.next()) 
-            {
-                System.out.println("ID: " + rs.getInt("id") + ", Name: " + rs.getString("name") + ", Password: " + rs.getString("password"));
+            Connection con = connect();
+            Statement stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery(sql)
+        ) {
+            while (rs.next()) {
+                result.append(rs.getInt("id")).append("\t")
+                      .append(rs.getString("name")).append("\t")
+                      .append(rs.getString("password")).append("\n");
             }
-        } 
-        catch (SQLException e) 
-        {
+        } catch (SQLException e) {
             e.printStackTrace();
+            result.append("Error fetching librarian data: ").append(e.getMessage());
         }
+        return result.toString();
     }
+    // public   void readLibrarian() 
+    // {
+    //     String sql = "SELECT * FROM librarian";
+    //     try (
+    //      Connection con = connect();
+    //      Statement stmt = con.createStatement();
+    //      ResultSet rs = stmt.executeQuery(sql)
+    //      ) 
+    //      {
+    //         while (rs.next()) 
+    //         {
+    //             System.out.println("ID: " + rs.getInt("id") + ", Name: " + rs.getString("name") + ", Password: " + rs.getString("password"));
+    //         }
+    //     } 
+    //     catch (SQLException e) 
+    //     {
+    //         e.printStackTrace();
+    //     }
+    // }
 
     public   void insertLibrarian (String name, int id,  String password) 
     {

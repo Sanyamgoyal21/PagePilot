@@ -352,34 +352,27 @@ public class AdminPanel {
             cardLayout.show(contentPanel, "Student");
             studentPanel.removeAll(); // Clear the panel before adding new components
             studentPanel.setLayout(new BorderLayout());
-
+        
             // Create buttons for Student and Librarian
             JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 10));
             JButton studentButton = new JButton("Manage Students");
             JButton librarianButton = new JButton("Manage Librarians");
             buttonPanel.add(studentButton);
             buttonPanel.add(librarianButton);
-
+        
             // Create a text area to display details
             JTextArea detailsArea = new JTextArea();
             detailsArea.setEditable(false);
             JScrollPane scrollPane = new JScrollPane(detailsArea);
-
-            // Create a toggle button
-            JButton toggleButton = new JButton("Toggle Active Status");
-            toggleButton.setEnabled(false); // Initially disabled
-            JPanel togglePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-            togglePanel.add(toggleButton);
-
+        
             // Add components to the student panel
             studentPanel.add(buttonPanel, BorderLayout.NORTH);
             studentPanel.add(scrollPane, BorderLayout.CENTER);
-            studentPanel.add(togglePanel, BorderLayout.SOUTH);
-
+        
             // Add functionality to the "Student" button
             studentButton.addActionListener(studentEvent -> {
                 String idStr = JOptionPane.showInputDialog("Enter Student ID (Leave blank to view all):");
-                int id = Integer.MIN_VALUE;
+                Integer id = null;
                 if (idStr != null && !idStr.trim().isEmpty()) {
                     try {
                         id = Integer.parseInt(idStr.trim());
@@ -389,41 +382,32 @@ public class AdminPanel {
                         return;
                     }
                 }
-
+        
                 Admin admin = new Admin();
                 String studentDetails = admin.getStudentDetails(id);
                 detailsArea.setText("=== Student Details ===\n\n" + studentDetails);
-
-                // Enable the toggle button if a specific ID is entered
-                toggleButton.setEnabled(id != Integer.MIN_VALUE);
-
-                // Remove existing ActionListeners to avoid duplication
-                for (ActionListener al : toggleButton.getActionListeners()) {
-                    toggleButton.removeActionListener(al);
-                }
-
-                // Add functionality to the toggle button
-                toggleButton.addActionListener(toggleEvent -> {
-                    if (id != Integer.MIN_VALUE) {
+        
+                // Option to toggle account status
+                if (id != null) {
+                    int choice = JOptionPane.showConfirmDialog(null, "Do you want to toggle the active status of this account?",
+                            "Toggle Account Status", JOptionPane.YES_NO_OPTION);
+                    if (choice == JOptionPane.YES_OPTION) {
                         boolean currentStatus = studentDetails.contains("Active: Yes");
                         boolean success = admin.updateAccountStatus("student", id, !currentStatus);
                         if (success) {
                             JOptionPane.showMessageDialog(null, "Account status updated successfully!");
-                            // Refresh the details
-                            String updatedDetails = admin.getStudentDetails(id);
-                            detailsArea.setText("=== Student Details ===\n\n" + updatedDetails);
                         } else {
                             JOptionPane.showMessageDialog(null, "Failed to update account status.", "Error",
                                     JOptionPane.ERROR_MESSAGE);
                         }
                     }
-                });
+                }
             });
-
+        
             // Add functionality to the "Librarian" button
             librarianButton.addActionListener(librarianEvent -> {
                 String idStr = JOptionPane.showInputDialog("Enter Librarian ID (Leave blank to view all):");
-                int id = Integer.MIN_VALUE;
+                Integer id = null;
                 if (idStr != null && !idStr.trim().isEmpty()) {
                     try {
                         id = Integer.parseInt(idStr.trim());
@@ -433,37 +417,28 @@ public class AdminPanel {
                         return;
                     }
                 }
-
+        
                 Admin admin = new Admin();
                 String librarianDetails = admin.getLibrarianDetails(id);
                 detailsArea.setText("=== Librarian Details ===\n\n" + librarianDetails);
-
-                // Enable the toggle button if a specific ID is entered
-                toggleButton.setEnabled(id != Integer.MIN_VALUE);
-
-                // Remove existing ActionListeners to avoid duplication
-                for (ActionListener al : toggleButton.getActionListeners()) {
-                    toggleButton.removeActionListener(al);
-                }
-
-                // Add functionality to the toggle button
-                toggleButton.addActionListener(toggleEvent -> {
-                    if (id != Integer.MIN_VALUE) {
+        
+                // Option to toggle account status
+                if (id != null) {
+                    int choice = JOptionPane.showConfirmDialog(null, "Do you want to toggle the active status of this account?",
+                            "Toggle Account Status", JOptionPane.YES_NO_OPTION);
+                    if (choice == JOptionPane.YES_OPTION) {
                         boolean currentStatus = librarianDetails.contains("Active: Yes");
                         boolean success = admin.updateAccountStatus("librarian", id, !currentStatus);
                         if (success) {
                             JOptionPane.showMessageDialog(null, "Account status updated successfully!");
-                            // Refresh the details
-                            String updatedDetails = admin.getLibrarianDetails(id);
-                            detailsArea.setText("=== Librarian Details ===\n\n" + updatedDetails);
                         } else {
                             JOptionPane.showMessageDialog(null, "Failed to update account status.", "Error",
                                     JOptionPane.ERROR_MESSAGE);
                         }
                     }
-                });
+                }
             });
-
+        
             studentPanel.revalidate();
             studentPanel.repaint();
         });

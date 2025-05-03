@@ -1,7 +1,10 @@
 package Frontend;
 
 import Backend.Admin;
+import Backend.Database;
 import javax.swing.*;
+import javax.xml.crypto.Data;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.ByteArrayOutputStream;
@@ -418,6 +421,13 @@ public class AdminPanel {
 
     public static void main(String[] args) {
         // Test the Admin Panel
+        Database db = new Database();
+        try {
+            Database.connect(); // Connect to the database
+        } catch (SQLException e) {
+            e.printStackTrace(); // Handle the exception
+            JOptionPane.showMessageDialog(null, "Database connection failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
         SwingUtilities.invokeLater(() -> displayAdminPage());
     }
 }

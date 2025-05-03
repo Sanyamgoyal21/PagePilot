@@ -157,8 +157,9 @@ public class AdminPanel {
                 librarianListArea.append("---------------------------------\n");
                 Admin admin = new Admin();
                 try {
-                    admin.readLibrarian(); // Fetch and display current librarians
-                    }catch (Exception ex) {
+                    String librarianData = admin.readLibrarian(); // Fetch librarian data
+                    librarianListArea.append(librarianData); // Display the data in the text area
+                } catch (Exception ex) {
                     librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
                 }
             });
@@ -183,20 +184,18 @@ public class AdminPanel {
                     librarianListArea.setText("Current Librarians:\n");
                     librarianListArea.append("ID\tName\tPassword\n");
                     librarianListArea.append("---------------------------------\n");
-                        try{
-                    admin.readLibrarian(); // Fetch and display current librarians
-                    
-                    }
-                    catch (Exception ex) {
+                    try {
+                        String librarianData = admin.readLibrarian(); // Fetch librarian data
+                        librarianListArea.append(librarianData); // Display the data in the text area
+                    } catch (Exception ex) {
                         JOptionPane.showMessageDialog(null, "Error adding librarian: " + ex.getMessage(), "Error",
                                 JOptionPane.ERROR_MESSAGE);
                     }
-                    }catch (NumberFormatException ex) {
+                } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(null, "Invalid ID format. Please enter a number.", "Error",
                             JOptionPane.ERROR_MESSAGE);
                 } 
-                }
-            );
+            });
 
             // Add functionality to the "Delete Librarian" button
             deleteButton.addActionListener(deleteEvent -> {
@@ -206,7 +205,8 @@ public class AdminPanel {
                 librarianListArea.append("---------------------------------\n");
                 Admin admin = new Admin();
                 try {
-                    admin.readLibrarian(); // Fetch and display current librarians
+                    String librarianData = admin.readLibrarian(); // Fetch librarian data
+                    librarianListArea.append(librarianData); // Display the data in the text area
                 } catch (Exception ex) {
                     librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
                 }
@@ -225,7 +225,17 @@ public class AdminPanel {
                     Admin admin = new Admin();
                     admin.deleteLibrarian(id);
                     JOptionPane.showMessageDialog(null, "Librarian deleted successfully!");
-                    viewButton.doClick(); // Refresh the list
+                    
+                    // Refresh the list
+                    librarianListArea.setText("Current Librarians:\n");
+                    librarianListArea.append("ID\tName\tPassword\n");
+                    librarianListArea.append("---------------------------------\n");
+                    try {
+                        String librarianData = admin.readLibrarian(); // Fetch librarian data
+                        librarianListArea.append(librarianData); // Display the data in the text area
+                    } catch (Exception ex) {
+                        librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
+                    }
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(null, "Invalid ID format. Please enter a number.", "Error",
                             JOptionPane.ERROR_MESSAGE);
@@ -235,66 +245,70 @@ public class AdminPanel {
             librarianPanel.revalidate();
             librarianPanel.repaint();
         });
-        // viewFineReportButton.addActionListener(e -> {
-        //     cardLayout.show(contentPanel, "FineReport"); // Show the Fine Report panel
-        //     JPanel fineReportPanels = new JPanel(new BorderLayout());
-        //     JTextArea fineReportArea = new JTextArea();
-        //     fineReportArea.setEditable(false);
-        //     JScrollPane scrollPane = new JScrollPane(fineReportArea);
-        //     fineReportPanel.add(scrollPane, BorderLayout.CENTER);
+        
+        viewFineReportButton.addActionListener(e -> {
+            cardLayout.show(contentPanel, "FineReport"); // Show the Fine Report panel
+            fineReportPanel.removeAll(); // Clear the panel before adding new components
+            fineReportPanel.setLayout(new BorderLayout());
+            
+            JTextArea fineReportArea = new JTextArea();
+            fineReportArea.setEditable(false);
+            JScrollPane scrollPane = new JScrollPane(fineReportArea);
+            fineReportPanel.add(scrollPane, BorderLayout.CENTER);
 
-        //     // Fetch and display fine details
-        //     Admin admin = new Admin();
-        //     fineReportArea.setText("Fine Report:\n");
-        //     fineReportArea.append("Issue ID\tStudent ID\tBook ID\tFine Amount\n");
-        //     fineReportArea.append("-------------------------------------------------\n");
+            // Fetch and display fine details
+            Admin admin = new Admin();
+            fineReportArea.setText("Fine Report:\n");
+            fineReportArea.append("Issue ID\tStudent ID\tBook ID\tFine Amount\n");
+            fineReportArea.append("-------------------------------------------------\n");
 
-        //     try {
-        //         // Fetch individual fine details
-        //         String sql = "SELECT fine, student_id, book_id, issue_id, MONTH(issue_date) as month FROM issued_books WHERE fine > 0";
-        //         Map<Integer, Double> monthlyFines = new HashMap<>(); // To store month-wise total fines
-        //         try (Connection con = Admin.connect();
-        //             Statement stmt = con.createStatement();
-        //             ResultSet rs = stmt.executeQuery(sql)) {
-        //             while (rs.next()) {
-        //                 int issueId = rs.getInt("issue_id");
-        //                 int studentId = rs.getInt("student_id");
-        //                 int bookId = rs.getInt("book_id");
-        //                 double fine = rs.getDouble("fine");
-        //                 int month = rs.getInt("month");
+            try {
+                // Fetch individual fine details
+                String sql = "SELECT fine, student_id, book_id, issue_id, MONTH(issue_date) as month FROM issued_books WHERE fine > 0";
+                Map<Integer, Double> monthlyFines = new HashMap<>(); // To store month-wise total fines
+                try (Connection con = Admin.connect();
+                    Statement stmt = con.createStatement();
+                    ResultSet rs = stmt.executeQuery(sql)) {
+                    while (rs.next()) {
+                        int issueId = rs.getInt("issue_id");
+                        int studentId = rs.getInt("student_id");
+                        int bookId = rs.getInt("book_id");
+                        double fine = rs.getDouble("fine");
+                        int month = rs.getInt("month");
 
-        //                 // Append individual fine details
-        //                 fineReportArea.append(issueId + "\t" + studentId + "\t" + bookId + "\t" + fine + "\n");
+                        // Append individual fine details
+                        fineReportArea.append(issueId + "\t" + studentId + "\t" + bookId + "\t" + fine + "\n");
 
-        //                 // Calculate month-wise total fines
-        //                 monthlyFines.put(month, monthlyFines.getOrDefault(month, 0.0) + fine);
-        //             }
-        //         }
+                        // Calculate month-wise total fines
+                        monthlyFines.put(month, monthlyFines.getOrDefault(month, 0.0) + fine);
+                    }
+                }
 
-        //         // Append month-wise total fines
-        //         fineReportArea.append("\nMonth-wise Total Fines:\n");
-        //         fineReportArea.append("Month\tTotal Fine Amount\n");
-        //         fineReportArea.append("----------------------------\n");
-        //         for (Map.Entry<Integer, Double> entry : monthlyFines.entrySet()) {
-        //             fineReportArea.append(entry.getKey() + "\t" + entry.getValue() + "\n");
-        //         }
+                // Append month-wise total fines
+                fineReportArea.append("\nMonth-wise Total Fines:\n");
+                fineReportArea.append("Month\tTotal Fine Amount\n");
+                fineReportArea.append("----------------------------\n");
+                for (Map.Entry<Integer, Double> entry : monthlyFines.entrySet()) {
+                    fineReportArea.append(entry.getKey() + "\t" + entry.getValue() + "\n");
+                }
 
-        //         // Append overall total fine
-        //         double totalFine = monthlyFines.values().stream().mapToDouble(Double::doubleValue).sum();
-        //         fineReportArea.append("\nOverall Total Fine: Rs. " + totalFine);
+                // Append overall total fine
+                double totalFine = monthlyFines.values().stream().mapToDouble(Double::doubleValue).sum();
+                fineReportArea.append("\nOverall Total Fine: Rs. " + totalFine);
 
-        //     } catch (SQLException ex) {
-        //         fineReportArea.append("Error fetching fine data: " + ex.getMessage());
-        //     }
-
-        //     // Add the fine report panel to the content panel
-        //     contentPanel.add(fineReportPanel, "FineReport");
-        //     contentPanel.revalidate();
-        //     contentPanel.repaint();
-        // });
+            } catch (SQLException ex) {
+                fineReportArea.append("Error fetching fine data: " + ex.getMessage());
+            }
+            
+            fineReportPanel.revalidate();
+            fineReportPanel.repaint();
+        });
+        
         generateReportButton.addActionListener(e -> {
             cardLayout.show(contentPanel, "SystemReport"); // Show the System Report panel
-            JPanel systemReportPanelsJPanel = new JPanel(new BorderLayout());
+            systemReportPanel.removeAll(); // Clear the panel before adding new components
+            systemReportPanel.setLayout(new BorderLayout());
+            
             JTextArea reportArea = new JTextArea();
             reportArea.setEditable(false); // Make the text area read-only
             JScrollPane scrollPane = new JScrollPane(reportArea);
@@ -305,10 +319,9 @@ public class AdminPanel {
             reportArea.setText("=== SYSTEM REPORT ===\n\n");
             try {
                 // Redirect the output of generateSystemReport() to the JTextArea
-                StringBuilder reportBuilder = new StringBuilder();
-                PrintStream originalOut = System.out; // Save the original System.out
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 PrintStream ps = new PrintStream(baos);
+                PrintStream originalOut = System.out; // Save the original System.out
                 System.setOut(ps); // Redirect System.out to the PrintStream
 
                 // Call the generateSystemReport() method
@@ -319,18 +332,73 @@ public class AdminPanel {
                 System.setOut(originalOut);
 
                 // Append the generated report to the JTextArea
-                reportBuilder.append(baos.toString());
-                reportArea.append(reportBuilder.toString());
+                reportArea.append(baos.toString());
             } catch (Exception ex) {
                 reportArea.append("Error generating system report: " + ex.getMessage());
             }
-
-            // Add the system report panel to the content panel
-            contentPanel.add(systemReportPanel, "SystemReport");
-            contentPanel.revalidate();
-            contentPanel.repaint();
+            
+            systemReportPanel.revalidate();
+            systemReportPanel.repaint();
         });
-        manageStudentButton.addActionListener(e -> cardLayout.show(contentPanel, "Student"));
+        
+        manageStudentButton.addActionListener(e -> {
+            cardLayout.show(contentPanel, "Student");
+            studentPanel.removeAll(); // Clear the panel before adding new components
+            
+            // Create panel layout for student management
+            studentPanel.setLayout(new BorderLayout());
+            
+            // Create a split pane for student management
+            JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+            splitPane.setDividerLocation(400); // Set initial divider position
+            
+            // Left panel with options
+            JPanel leftPanel = new JPanel(new CardLayout());
+            JPanel optionsPanel = new JPanel(new GridLayout(3, 1, 10, 10));
+            JButton viewStudentsButton = new JButton("View Students");
+            JButton addStudentButton = new JButton("Add Student");
+            JButton deleteStudentButton = new JButton("Delete Student");
+            
+            optionsPanel.add(viewStudentsButton);
+            optionsPanel.add(addStudentButton);
+            optionsPanel.add(deleteStudentButton);
+            leftPanel.add(optionsPanel, "Options");
+            
+            // Right panel to display students
+            JPanel viewStudentsPanel = new JPanel(new BorderLayout());
+            JTextArea studentListArea = new JTextArea();
+            studentListArea.setEditable(false);
+            JScrollPane scrollPane = new JScrollPane(studentListArea);
+            viewStudentsPanel.add(scrollPane, BorderLayout.CENTER);
+            
+            // Add panels to split pane
+            splitPane.setLeftComponent(leftPanel);
+            splitPane.setRightComponent(viewStudentsPanel);
+            
+            // Add split pane to student panel
+            studentPanel.add(splitPane, BorderLayout.CENTER);
+            
+            // Add action listeners for student management buttons
+            viewStudentsButton.addActionListener(viewEvent -> {
+                studentListArea.setText("Student List:\n");
+                studentListArea.append("ID\tName\tEmail\tCourse\n");
+                studentListArea.append("---------------------------------\n");
+                
+                Admin admin = new Admin();
+                try {
+                    // You'll need to implement this method in your Admin class
+                    // String studentData = admin.readStudents();
+                    // studentListArea.append(studentData);
+                    studentListArea.append("Student listing functionality to be implemented");
+                } catch (Exception ex) {
+                    studentListArea.append("Error fetching student data: " + ex.getMessage());
+                }
+            });
+            
+            studentPanel.revalidate();
+            studentPanel.repaint();
+        });
+        
         logoutButton.addActionListener(e -> adminFrame.dispose()); // Close the admin dashboard
 
         // Add navigation and content panels to the frame

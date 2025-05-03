@@ -10,7 +10,7 @@ public class Database
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
-    static final String PASS = "Sanyam@123";
+    static final String PASS = "Sanki@2004";
 
 
 
@@ -36,6 +36,14 @@ public class Database
     }
 
     public static void main(String[] args) {
+
+        String createDatabase = "CREATE DATABASE IF NOT EXISTS pagepilot;";
+        queryExecute(createDatabase);
+
+        String useDatabase = "USE pagepilot;";
+        queryExecute(useDatabase);
+
+        
         // Example usage
         String createTableAdmin = "CREATE TABLE admin (
                                         id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,

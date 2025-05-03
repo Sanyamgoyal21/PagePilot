@@ -12,7 +12,7 @@ public class LoginPanel {
         JLabel userLabel = new JLabel("User");
         JLabel passwordLabel = new JLabel("Password");
         JLabel roleLabel = new JLabel("Role");
-        JTextField userText = new JTextField(20);
+        JTextField userText = new JTextField(20);wq
         JPasswordField passwordText = new JPasswordField(20);
         JButton loginButton = new JButton("Login");
         JLabel successLabel = new JLabel(""); 

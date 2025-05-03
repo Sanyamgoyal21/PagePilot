@@ -24,7 +24,7 @@ Functional Requirements
 •	View fine reports (Individual, Total month-wise) ✅
 •	Generate overall system reports  ✅
 •	Manage user accounts (Activate/Deactivate)  ✅
-•	Logout ✅
+•	Logout ✅  
 2. Librarian
 •	Add/View/Delete books ✅
 •	Issue books to students ✅

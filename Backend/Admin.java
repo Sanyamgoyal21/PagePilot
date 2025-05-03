@@ -66,22 +66,20 @@ public class Admin {
         return result.toString();
     }
 
-
     public void insertLibrarian(String name, String password) {
         String checkSql = "SELECT * FROM librarian WHERE password = ?";
         String insertSql = "INSERT INTO librarian (name, password) VALUES (?, ?)";
         try (
-            Connection con = connect();
-            PreparedStatement checkPst = con.prepareStatement(checkSql);
-            PreparedStatement insertPst = con.prepareStatement(insertSql)
-        ) {
+                Connection con = connect();
+                PreparedStatement checkPst = con.prepareStatement(checkSql);
+                PreparedStatement insertPst = con.prepareStatement(insertSql)) {
             // Check if the password is already in use
             checkPst.setString(1, password);
             ResultSet rs = checkPst.executeQuery();
             if (rs.next()) {
                 throw new SQLException("Password is already in use. Please choose another password.");
             }
-    
+
             // Insert the new librarian
             insertPst.setString(1, name);
             insertPst.setString(2, password);
@@ -92,21 +90,21 @@ public class Admin {
             throw new RuntimeException(e.getMessage());
         }
     }
+
     public boolean deleteLibrarian(int id) {
         String checkSql = "SELECT * FROM librarian WHERE id = ?";
         String deleteSql = "DELETE FROM librarian WHERE id = ?";
         try (
-            Connection con = connect();
-            PreparedStatement checkPst = con.prepareStatement(checkSql);
-            PreparedStatement deletePst = con.prepareStatement(deleteSql)
-        ) {
+                Connection con = connect();
+                PreparedStatement checkPst = con.prepareStatement(checkSql);
+                PreparedStatement deletePst = con.prepareStatement(deleteSql)) {
             // Check if the ID exists
             checkPst.setInt(1, id);
             ResultSet rs = checkPst.executeQuery();
             if (!rs.next()) {
                 return false; // ID does not exist
             }
-    
+
             // Proceed with deletion
             deletePst.setInt(1, id);
             int rows = deletePst.executeUpdate();
@@ -132,18 +130,69 @@ public class Admin {
         }
     }
 
-    public void readStudent() {
-        String sql = "SELECT * FROM student";
+    public String getStudentDetails(Integer id) {
+        StringBuilder result = new StringBuilder();
+        String sql = id == null ? "SELECT s.id, s.name, s.active, IFNULL(SUM(ib.fine), 0) AS total_fine " +
+                "FROM student s LEFT JOIN issued_books ib ON s.id = ib.student_id GROUP BY s.id"
+                : "SELECT s.id, s.name, s.active, IFNULL(SUM(ib.fine), 0) AS total_fine " +
+                        "FROM student s LEFT JOIN issued_books ib ON s.id = ib.student_id WHERE s.id = ? GROUP BY s.id";
+
         try (
                 Connection con = connect();
-                Statement stmt = con.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            if (id != null) {
+                pst.setInt(1, id);
+            }
+            ResultSet rs = pst.executeQuery();
             while (rs.next()) {
-                System.out.println("ID: " + rs.getInt("id") + ", Name: " + rs.getString("name") + ", Password: "
-                        + rs.getString("password"));
+                result.append("ID: ").append(rs.getInt("id"))
+                        .append(", Name: ").append(rs.getString("name"))
+                        .append(", Active: ").append(rs.getBoolean("active") ? "Yes" : "No")
+                        .append(", Total Fine: Rs. ").append(rs.getDouble("total_fine"))
+                        .append("\n");
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            result.append("Error fetching student data: ").append(e.getMessage());
+        }
+        return result.toString();
+    }
+
+    public String getLibrarianDetails(Integer id) {
+        StringBuilder result = new StringBuilder();
+        String sql = id == null ? "SELECT * FROM librarian" : "SELECT * FROM librarian WHERE id = ?";
+        try (
+                Connection con = connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            if (id != null) {
+                pst.setInt(1, id);
+            }
+            ResultSet rs = pst.executeQuery();
+            while (rs.next()) {
+                result.append("ID: ").append(rs.getInt("id"))
+                        .append(", Name: ").append(rs.getString("name"))
+                        .append(", Active: ").append(rs.getBoolean("active") ? "Yes" : "No")
+                        .append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            result.append("Error fetching librarian data: ").append(e.getMessage());
+        }
+        return result.toString();
+    }
+
+    public boolean updateAccountStatus(String table, int id, boolean active) {
+        String sql = "UPDATE " + table + " SET active = ? WHERE id = ?";
+        try (
+                Connection con = connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setBoolean(1, active);
+            pst.setInt(2, id);
+            int rows = pst.executeUpdate();
+            return rows > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 

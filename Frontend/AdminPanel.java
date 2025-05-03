@@ -4,10 +4,14 @@ import Backend.Admin;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Map;
 
 public class AdminPanel {
     public static void displayAdminPage() {
@@ -19,7 +23,7 @@ public class AdminPanel {
 
         // Left-side navigation panel
         JPanel navigationPanel = new JPanel();
-        navigationPanel.setLayout(new GridLayout(5, 1, 10, 10)); // 5 buttons with spacing
+        navigationPanel.setLayout(new GridLayout(5, 1, 5, 5)); // 5 buttons with spacing
         navigationPanel.setBackground(new Color(220, 220, 220)); // Light gray background
         navigationPanel.setPreferredSize(new Dimension(200, 0)); // Fixed width for navigation
 
@@ -132,18 +136,10 @@ public class AdminPanel {
                 librarianListArea.setText("Current Librarians:\n");
                 librarianListArea.append("ID\tName\tPassword\n");
                 librarianListArea.append("---------------------------------\n");
-                String sql = "SELECT * FROM librarian";
+                Admin admin = new Admin();
                 try {
-                    try (Connection con = Admin.connect();
-                            Statement stmt = con.createStatement();
-                            ResultSet rs = stmt.executeQuery(sql)) {
-                        while (rs.next()) {
-                            librarianListArea.append(rs.getInt("id") + "\t" +
-                                    rs.getString("name") + "\t" +
-                                    rs.getString("password") + "\n");
-                        }
-                    }
-                } catch (SQLException ex) {
+                    admin.readLibrarian(); // Fetch and display current librarians
+                } catch (Exception ex) {
                     librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
                 }
             });
@@ -154,20 +150,10 @@ public class AdminPanel {
                 librarianListArea.setText("Current Librarians:\n");
                 librarianListArea.append("ID\tName\tPassword\n");
                 librarianListArea.append("---------------------------------\n");
-
-                // Fetch and display current librarians
-                String sql = "SELECT * FROM librarian";
+                Admin admin = new Admin();
                 try {
-                    try (Connection con = Admin.connect();
-                            Statement stmt = con.createStatement();
-                            ResultSet rs = stmt.executeQuery(sql)) {
-                        while (rs.next()) {
-                            librarianListArea.append(rs.getInt("id") + "\t" +
-                                    rs.getString("name") + "\t" +
-                                    rs.getString("password") + "\n");
-                        }
-                    }
-                } catch (SQLException ex) {
+                    admin.readLibrarian(); // Fetch and display current librarians
+                    }catch (Exception ex) {
                     librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
                 }
             });
@@ -192,27 +178,34 @@ public class AdminPanel {
                     librarianListArea.setText("Current Librarians:\n");
                     librarianListArea.append("ID\tName\tPassword\n");
                     librarianListArea.append("---------------------------------\n");
-                    String sql = "SELECT * FROM librarian";
-                    try (Connection con = Admin.connect();
-                            Statement stmt = con.createStatement();
-                            ResultSet rs = stmt.executeQuery(sql)) {
-                        while (rs.next()) {
-                            librarianListArea.append(rs.getInt("id") + "\t" +
-                                    rs.getString("name") + "\t" +
-                                    rs.getString("password") + "\n");
-                        }
+                        try{
+                    admin.readLibrarian(); // Fetch and display current librarians
+                    
                     }
-                } catch (NumberFormatException ex) {
+                    catch (Exception ex) {
+                        JOptionPane.showMessageDialog(null, "Error adding librarian: " + ex.getMessage(), "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                    }catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(null, "Invalid ID format. Please enter a number.", "Error",
                             JOptionPane.ERROR_MESSAGE);
-                } catch (SQLException ex) {
-                    JOptionPane.showMessageDialog(null, "Error adding librarian: " + ex.getMessage(), "Error",
-                            JOptionPane.ERROR_MESSAGE);
+                } 
                 }
-            });
+            );
 
             // Add functionality to the "Delete Librarian" button
-            deleteButton.addActionListener(deleteEvent -> leftCardLayout.show(leftPanel, "Delete"));
+            deleteButton.addActionListener(deleteEvent -> {
+                leftCardLayout.show(leftPanel, "Delete");
+                librarianListArea.setText("Current Librarians:\n");
+                librarianListArea.append("ID\tName\tPassword\n");
+                librarianListArea.append("---------------------------------\n");
+                Admin admin = new Admin();
+                try {
+                    admin.readLibrarian(); // Fetch and display current librarians
+                } catch (Exception ex) {
+                    librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
+                }
+            });
 
             submitDeleteButton.addActionListener(submitDeleteEvent -> {
                 String idStr = deleteIdField.getText().trim();
@@ -237,8 +230,101 @@ public class AdminPanel {
             librarianPanel.revalidate();
             librarianPanel.repaint();
         });
-        viewFineReportButton.addActionListener(e -> cardLayout.show(contentPanel, "FineReport"));
-        generateReportButton.addActionListener(e -> cardLayout.show(contentPanel, "SystemReport"));
+        // viewFineReportButton.addActionListener(e -> {
+        //     cardLayout.show(contentPanel, "FineReport"); // Show the Fine Report panel
+        //     JPanel fineReportPanels = new JPanel(new BorderLayout());
+        //     JTextArea fineReportArea = new JTextArea();
+        //     fineReportArea.setEditable(false);
+        //     JScrollPane scrollPane = new JScrollPane(fineReportArea);
+        //     fineReportPanel.add(scrollPane, BorderLayout.CENTER);
+
+        //     // Fetch and display fine details
+        //     Admin admin = new Admin();
+        //     fineReportArea.setText("Fine Report:\n");
+        //     fineReportArea.append("Issue ID\tStudent ID\tBook ID\tFine Amount\n");
+        //     fineReportArea.append("-------------------------------------------------\n");
+
+        //     try {
+        //         // Fetch individual fine details
+        //         String sql = "SELECT fine, student_id, book_id, issue_id, MONTH(issue_date) as month FROM issued_books WHERE fine > 0";
+        //         Map<Integer, Double> monthlyFines = new HashMap<>(); // To store month-wise total fines
+        //         try (Connection con = Admin.connect();
+        //             Statement stmt = con.createStatement();
+        //             ResultSet rs = stmt.executeQuery(sql)) {
+        //             while (rs.next()) {
+        //                 int issueId = rs.getInt("issue_id");
+        //                 int studentId = rs.getInt("student_id");
+        //                 int bookId = rs.getInt("book_id");
+        //                 double fine = rs.getDouble("fine");
+        //                 int month = rs.getInt("month");
+
+        //                 // Append individual fine details
+        //                 fineReportArea.append(issueId + "\t" + studentId + "\t" + bookId + "\t" + fine + "\n");
+
+        //                 // Calculate month-wise total fines
+        //                 monthlyFines.put(month, monthlyFines.getOrDefault(month, 0.0) + fine);
+        //             }
+        //         }
+
+        //         // Append month-wise total fines
+        //         fineReportArea.append("\nMonth-wise Total Fines:\n");
+        //         fineReportArea.append("Month\tTotal Fine Amount\n");
+        //         fineReportArea.append("----------------------------\n");
+        //         for (Map.Entry<Integer, Double> entry : monthlyFines.entrySet()) {
+        //             fineReportArea.append(entry.getKey() + "\t" + entry.getValue() + "\n");
+        //         }
+
+        //         // Append overall total fine
+        //         double totalFine = monthlyFines.values().stream().mapToDouble(Double::doubleValue).sum();
+        //         fineReportArea.append("\nOverall Total Fine: Rs. " + totalFine);
+
+        //     } catch (SQLException ex) {
+        //         fineReportArea.append("Error fetching fine data: " + ex.getMessage());
+        //     }
+
+        //     // Add the fine report panel to the content panel
+        //     contentPanel.add(fineReportPanel, "FineReport");
+        //     contentPanel.revalidate();
+        //     contentPanel.repaint();
+        // });
+        generateReportButton.addActionListener(e -> {
+            cardLayout.show(contentPanel, "SystemReport"); // Show the System Report panel
+            JPanel systemReportPanelsJPanel = new JPanel(new BorderLayout());
+            JTextArea reportArea = new JTextArea();
+            reportArea.setEditable(false); // Make the text area read-only
+            JScrollPane scrollPane = new JScrollPane(reportArea);
+            systemReportPanel.add(scrollPane, BorderLayout.CENTER);
+
+            // Fetch and display the system report
+            Admin admin = new Admin();
+            reportArea.setText("=== SYSTEM REPORT ===\n\n");
+            try {
+                // Redirect the output of generateSystemReport() to the JTextArea
+                StringBuilder reportBuilder = new StringBuilder();
+                PrintStream originalOut = System.out; // Save the original System.out
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                PrintStream ps = new PrintStream(baos);
+                System.setOut(ps); // Redirect System.out to the PrintStream
+
+                // Call the generateSystemReport() method
+                admin.generateSystemReport();
+
+                // Restore the original System.out
+                System.out.flush();
+                System.setOut(originalOut);
+
+                // Append the generated report to the JTextArea
+                reportBuilder.append(baos.toString());
+                reportArea.append(reportBuilder.toString());
+            } catch (Exception ex) {
+                reportArea.append("Error generating system report: " + ex.getMessage());
+            }
+
+            // Add the system report panel to the content panel
+            contentPanel.add(systemReportPanel, "SystemReport");
+            contentPanel.revalidate();
+            contentPanel.repaint();
+        });
         manageStudentButton.addActionListener(e -> cardLayout.show(contentPanel, "Student"));
         logoutButton.addActionListener(e -> adminFrame.dispose()); // Close the admin dashboard
 

@@ -3,14 +3,14 @@ import java.util.* ;
 import java.sql.*;
 
 
-public class database
+public class Database
 {
 
 
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
-    static final String PASS = "";
+    static final String PASS = "Sanyam@123";
 
 
 

@@ -343,60 +343,6 @@ public class AdminPanel {
         
         manageStudentButton.addActionListener(e -> {
             cardLayout.show(contentPanel, "Student");
-            studentPanel.removeAll(); // Clear the panel before adding new components
-            
-            // Create panel layout for student management
-            studentPanel.setLayout(new BorderLayout());
-            
-            // Create a split pane for student management
-            JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-            splitPane.setDividerLocation(400); // Set initial divider position
-            
-            // Left panel with options
-            JPanel leftPanel = new JPanel(new CardLayout());
-            JPanel optionsPanel = new JPanel(new GridLayout(3, 1, 10, 10));
-            JButton viewStudentsButton = new JButton("View Students");
-            JButton addStudentButton = new JButton("Add Student");
-            JButton deleteStudentButton = new JButton("Delete Student");
-            
-            optionsPanel.add(viewStudentsButton);
-            optionsPanel.add(addStudentButton);
-            optionsPanel.add(deleteStudentButton);
-            leftPanel.add(optionsPanel, "Options");
-            
-            // Right panel to display students
-            JPanel viewStudentsPanel = new JPanel(new BorderLayout());
-            JTextArea studentListArea = new JTextArea();
-            studentListArea.setEditable(false);
-            JScrollPane scrollPane = new JScrollPane(studentListArea);
-            viewStudentsPanel.add(scrollPane, BorderLayout.CENTER);
-            
-            // Add panels to split pane
-            splitPane.setLeftComponent(leftPanel);
-            splitPane.setRightComponent(viewStudentsPanel);
-            
-            // Add split pane to student panel
-            studentPanel.add(splitPane, BorderLayout.CENTER);
-            
-            // Add action listeners for student management buttons
-            viewStudentsButton.addActionListener(viewEvent -> {
-                studentListArea.setText("Student List:\n");
-                studentListArea.append("ID\tName\tEmail\tCourse\n");
-                studentListArea.append("---------------------------------\n");
-                
-                Admin admin = new Admin();
-                try {
-                    // You'll need to implement this method in your Admin class
-                    // String studentData = admin.readStudents();
-                    // studentListArea.append(studentData);
-                    studentListArea.append("Student listing functionality to be implemented");
-                } catch (Exception ex) {
-                    studentListArea.append("Error fetching student data: " + ex.getMessage());
-                }
-            });
-            
-            studentPanel.revalidate();
-            studentPanel.repaint();
         });
         
         logoutButton.addActionListener(e -> adminFrame.dispose()); // Close the admin dashboard

@@ -8,7 +8,7 @@ public class Database {
     static final String DB_URL_WITHOUT_DB = "jdbc:mysql://localhost:3306/";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
-    static final String PASS = "";
+    static final String PASS = "Sanyam@123"; // Replace with your actual password
 
     // Connect without selecting a database (used for CREATE DATABASE)
     public static Connection connectWithoutDB() throws SQLException {

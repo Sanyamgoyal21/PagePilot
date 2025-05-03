@@ -288,6 +288,20 @@ public class Admin {
         }
     }
 
+    public static boolean login(String username, String password) {
+        String sql = "SELECT * FROM admin WHERE name = ? AND password = ?";
+        try (Connection con = connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setString(1, username);
+            pst.setString(2, password);
+            ResultSet rs = pst.executeQuery();
+            return rs.next(); // Return true if a matching record is found
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public static void login(int id) {
         String sql = "UPDATE admin SET login = 1 WHERE id = ?";
         try (

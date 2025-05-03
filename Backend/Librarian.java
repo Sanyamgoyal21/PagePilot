@@ -390,6 +390,20 @@ public class Librarian {
         return false;
     }
 
+    public static boolean login(String username, String password) {
+        String sql = "SELECT * FROM librarian WHERE name = ? AND password = ?";
+        try (Connection con = Database.connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setString(1, username);
+            pst.setString(2, password);
+            ResultSet rs = pst.executeQuery();
+            return rs.next(); // Return true if a matching record is found
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public static void main(String[] args) {
         Librarian librarian = new Librarian();
         librarian.addOrUpdateBook("Java Programming", "John Doe", 5, 5);

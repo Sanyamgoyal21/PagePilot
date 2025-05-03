@@ -1,7 +1,9 @@
 package Frontend;
+
 import Backend.Student;
 import Backend.Librarian;
 import Backend.Admin;
+
 import javax.swing.*;
 import java.awt.event.*;
 import java.awt.*;
@@ -9,16 +11,17 @@ import java.awt.*;
 public class LoginPanel {
     private static void placeComponents(JPanel panel) {
         panel.setLayout(null);
+
         JLabel userLabel = new JLabel("User");
         JLabel passwordLabel = new JLabel("Password");
         JLabel roleLabel = new JLabel("Role");
-        JTextField userText = new JTextField(20);wq
+        JTextField userText = new JTextField(20);
         JPasswordField passwordText = new JPasswordField(20);
         JButton loginButton = new JButton("Login");
-        JLabel successLabel = new JLabel(""); 
-        
+        JLabel successLabel = new JLabel("");
+
         // Create the dropdown/combobox
-        String[] userTypes = {"Student", "Librarian", "Admin"};
+        String[] userTypes = { "Student", "Librarian", "Admin" };
         JComboBox<String> roleComboBox = new JComboBox<>(userTypes);
 
         // Set bounds for all components
@@ -41,31 +44,42 @@ public class LoginPanel {
         panel.add(loginButton);
         panel.add(successLabel);
 
+        // Add action listener for the Login button
         loginButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String username = userText.getText();
                 String password = new String(passwordText.getPassword());
                 String selectedRole = (String) roleComboBox.getSelectedItem();
-                
+
                 boolean loginSuccess = false;
-                switch(selectedRole) {
+
+                switch (selectedRole) {
                     case "Student":
                         loginSuccess = Student.login(username, password);
+                        if (loginSuccess) {
+                            successLabel.setText("Login successful as Student!");
+                            StudentPanel.displayStudentPage(); // Redirect to StudentPanel
+                        }
                         break;
+
                     case "Librarian":
-                        //loginSuccess = Librarian.login(username, password);
+                        loginSuccess = Librarian.login(username, password);
+                        if (loginSuccess) {
+                            successLabel.setText("Login successful as Librarian!");
+                            LibrarianPanel.displayLibrarianPage(); // Redirect to LibrarianPanel
+                        }
                         break;
+
                     case "Admin":
-                        // Add Admin login logic here
+                        loginSuccess = Admin.login(username, password);
+                        if (loginSuccess) {
+                            successLabel.setText("Login successful as Admin!");
+                            AdminPanel.displayAdminPage(); // Redirect to AdminPanel
+                        }
                         break;
                 }
-                
-                if(loginSuccess) {
-                    successLabel.setText("Login successful as " + selectedRole + "!");
-                    // Proceed to the next screen or functionality based on role
-                    // For example, you can open a new JFrame or redirect to another panel
 
-                } else {
+                if (!loginSuccess) {
                     successLabel.setText("Invalid username or password.");
                 }
             }

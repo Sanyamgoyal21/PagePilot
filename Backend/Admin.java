@@ -11,6 +11,9 @@ public class Admin
     static final String USER = "root";
     static final String PASS = "";
 
+
+
+
     // Establish connection
     public static Connection connect() throws SQLException {
         return DriverManager.getConnection(DB_URL, USER, PASS);
@@ -371,28 +374,28 @@ public class Admin
         }
     }
 
-    public static void main(String[] args) 
-    {
-        // insertLibrarian("Prantik Sanki", 2, "678910");
-        // readAdmin();
+    // public static void main(String[] args) 
+    // {
+    //     // insertLibrarian("Prantik Sanki", 2, "678910");
+    //     // readAdmin();
 
 
 
-        // readLibrarian(); 
-        // deleteLibrarian(2) ; 
-        // readLibrarian(); 
+    //     // readLibrarian(); 
+    //     // deleteLibrarian(2) ; 
+    //     // readLibrarian(); 
 
 
-        // insertStudent("Sanyam Goyel", 1, "12345");
-        // insertStudent("Prantik Sanki", 2, "678910");
-        // readStudent();
-        // allFineList() ;
-        // manageAccountStudent(1) ;
-        // login(1) ;
-        // logout(1) ;
-        generateSystemReport() ;
+    //     // insertStudent("Sanyam Goyel", 1, "12345");
+    //     // insertStudent("Prantik Sanki", 2, "678910");
+    //     // readStudent();
+    //     // allFineList() ;
+    //     // manageAccountStudent(1) ;
+    //     // login(1) ;
+    //     // logout(1) ;
+    //     generateSystemReport() ;
 
-    }
+    // }
 
 
 }

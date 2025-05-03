@@ -136,7 +136,7 @@ public class AdminPanel {
                 librarianListArea.setText("Current Librarians:\n");
                 librarianListArea.append("ID\tName\tPassword\n");
                 librarianListArea.append("---------------------------------\n");
-            
+
                 Admin admin = new Admin();
                 try {
                     String librarianData = admin.readLibrarian(); // Fetch librarian data
@@ -189,7 +189,8 @@ public class AdminPanel {
                 } catch (RuntimeException ex) {
                     // Check if the exception message is about the password being in use
                     if (ex.getMessage().contains("Password is already in use")) {
-                        JOptionPane.showMessageDialog(null, "Password is already in use. Please choose another password.", "Error",
+                        JOptionPane.showMessageDialog(null,
+                                "Password is already in use. Please choose another password.", "Error",
                                 JOptionPane.ERROR_MESSAGE);
                     } else {
                         JOptionPane.showMessageDialog(null, "Error adding librarian: " + ex.getMessage(), "Error",
@@ -220,19 +221,19 @@ public class AdminPanel {
                             JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-            
+
                 try {
                     int id = Integer.parseInt(idStr);
                     Admin admin = new Admin();
                     boolean isDeleted = admin.deleteLibrarian(id);
-            
+
                     if (isDeleted) {
                         JOptionPane.showMessageDialog(null, "Librarian deleted successfully!");
                     } else {
                         JOptionPane.showMessageDialog(null, "Librarian with ID " + id + " does not exist.", "Error",
                                 JOptionPane.ERROR_MESSAGE);
                     }
-            
+
                     // Refresh the librarian list
                     librarianListArea.setText("Current Librarians:\n");
                     librarianListArea.append("ID\tName\tPassword\n");
@@ -252,69 +253,69 @@ public class AdminPanel {
             librarianPanel.revalidate();
             librarianPanel.repaint();
         });
-        
+
         viewFineReportButton.addActionListener(e -> {
             cardLayout.show(contentPanel, "FineReport"); // Show the Fine Report panel
             fineReportPanel.removeAll(); // Clear the panel before adding new components
             fineReportPanel.setLayout(new BorderLayout());
-        
+
             JTextArea fineReportArea = new JTextArea();
             fineReportArea.setEditable(false);
             JScrollPane scrollPane = new JScrollPane(fineReportArea);
             fineReportPanel.add(scrollPane, BorderLayout.CENTER);
-        
+
             // Fetch and display fine details
             Admin admin = new Admin();
             fineReportArea.setText("=== Fine Report ===\n\n");
-        
+
             try {
                 // Fetch individual fine details
                 String sql = "SELECT issue_id, student_id, book_id, fine, MONTH(issue_date) AS month " +
-                             "FROM issued_books WHERE fine > 0";
+                        "FROM issued_books WHERE fine > 0";
                 try (Connection con = Admin.connect();
-                     Statement stmt = con.createStatement();
-                     ResultSet rs = stmt.executeQuery(sql)) {
+                        Statement stmt = con.createStatement();
+                        ResultSet rs = stmt.executeQuery(sql)) {
                     fineReportArea.append("Individual Fines:\n");
                     fineReportArea.append("Issue ID\tStudent ID\tBook ID\tFine Amount\n");
                     fineReportArea.append("-------------------------------------------------\n");
-        
+
                     while (rs.next()) {
                         int issueId = rs.getInt("issue_id");
                         int studentId = rs.getInt("student_id");
                         int bookId = rs.getInt("book_id");
                         double fine = rs.getDouble("fine");
-        
+
                         fineReportArea.append(issueId + "\t" + studentId + "\t" + bookId + "\t" + fine + "\n");
                     }
                 }
-        
+
                 // Fetch monthly fines
                 List<Double> monthlyFines = admin.viewMonthlyFines();
                 fineReportArea.append("\nMonthly Fines:\n");
                 fineReportArea.append("Month\tTotal Fine Amount\n");
                 fineReportArea.append("----------------------------\n");
-        
+
                 for (int i = 0; i < monthlyFines.size(); i++) {
                     fineReportArea.append((i + 1) + "\t" + monthlyFines.get(i) + "\n");
                 }
-        
+
                 // Calculate overall total fine
                 double totalFine = monthlyFines.stream().mapToDouble(Double::doubleValue).sum();
                 fineReportArea.append("\nOverall Total Fine: Rs. " + totalFine);
-        
+
             } catch (SQLException ex) {
                 fineReportArea.append("Error fetching fine data: " + ex.getMessage());
             }
-        
+
             fineReportPanel.revalidate();
             fineReportPanel.repaint();
         });
-        
+
         generateReportButton.addActionListener(e -> {
             cardLayout.show(contentPanel, "SystemReport"); // Show the System Report panel
             systemReportPanel.removeAll(); // Clear the panel before adding new components
             systemReportPanel.setLayout(new BorderLayout());
-            
+
             JTextArea reportArea = new JTextArea();
             reportArea.setEditable(false); // Make the text area read-only
             JScrollPane scrollPane = new JScrollPane(reportArea);
@@ -342,15 +343,131 @@ public class AdminPanel {
             } catch (Exception ex) {
                 reportArea.append("Error generating system report: " + ex.getMessage());
             }
-            
+
             systemReportPanel.revalidate();
             systemReportPanel.repaint();
         });
-        
+
         manageStudentButton.addActionListener(e -> {
             cardLayout.show(contentPanel, "Student");
+            studentPanel.removeAll(); // Clear the panel before adding new components
+            studentPanel.setLayout(new BorderLayout());
+
+            // Create buttons for Student and Librarian
+            JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 10));
+            JButton studentButton = new JButton("Manage Students");
+            JButton librarianButton = new JButton("Manage Librarians");
+            buttonPanel.add(studentButton);
+            buttonPanel.add(librarianButton);
+
+            // Create a text area to display details
+            JTextArea detailsArea = new JTextArea();
+            detailsArea.setEditable(false);
+            JScrollPane scrollPane = new JScrollPane(detailsArea);
+
+            // Create a toggle button
+            JButton toggleButton = new JButton("Toggle Active Status");
+            toggleButton.setEnabled(false); // Initially disabled
+            JPanel togglePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            togglePanel.add(toggleButton);
+
+            // Add components to the student panel
+            studentPanel.add(buttonPanel, BorderLayout.NORTH);
+            studentPanel.add(scrollPane, BorderLayout.CENTER);
+            studentPanel.add(togglePanel, BorderLayout.SOUTH);
+
+            // Add functionality to the "Student" button
+            studentButton.addActionListener(studentEvent -> {
+                String idStr = JOptionPane.showInputDialog("Enter Student ID (Leave blank to view all):");
+                int id = Integer.MIN_VALUE;
+                if (idStr != null && !idStr.trim().isEmpty()) {
+                    try {
+                        id = Integer.parseInt(idStr.trim());
+                    } catch (NumberFormatException ex) {
+                        JOptionPane.showMessageDialog(null, "Invalid ID format. Please enter a number.", "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
+
+                Admin admin = new Admin();
+                String studentDetails = admin.getStudentDetails(id);
+                detailsArea.setText("=== Student Details ===\n\n" + studentDetails);
+
+                // Enable the toggle button if a specific ID is entered
+                toggleButton.setEnabled(id != Integer.MIN_VALUE);
+
+                // Remove existing ActionListeners to avoid duplication
+                for (ActionListener al : toggleButton.getActionListeners()) {
+                    toggleButton.removeActionListener(al);
+                }
+
+                // Add functionality to the toggle button
+                toggleButton.addActionListener(toggleEvent -> {
+                    if (id != Integer.MIN_VALUE) {
+                        boolean currentStatus = studentDetails.contains("Active: Yes");
+                        boolean success = admin.updateAccountStatus("student", id, !currentStatus);
+                        if (success) {
+                            JOptionPane.showMessageDialog(null, "Account status updated successfully!");
+                            // Refresh the details
+                            String updatedDetails = admin.getStudentDetails(id);
+                            detailsArea.setText("=== Student Details ===\n\n" + updatedDetails);
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Failed to update account status.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                });
+            });
+
+            // Add functionality to the "Librarian" button
+            librarianButton.addActionListener(librarianEvent -> {
+                String idStr = JOptionPane.showInputDialog("Enter Librarian ID (Leave blank to view all):");
+                int id = Integer.MIN_VALUE;
+                if (idStr != null && !idStr.trim().isEmpty()) {
+                    try {
+                        id = Integer.parseInt(idStr.trim());
+                    } catch (NumberFormatException ex) {
+                        JOptionPane.showMessageDialog(null, "Invalid ID format. Please enter a number.", "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
+
+                Admin admin = new Admin();
+                String librarianDetails = admin.getLibrarianDetails(id);
+                detailsArea.setText("=== Librarian Details ===\n\n" + librarianDetails);
+
+                // Enable the toggle button if a specific ID is entered
+                toggleButton.setEnabled(id != Integer.MIN_VALUE);
+
+                // Remove existing ActionListeners to avoid duplication
+                for (ActionListener al : toggleButton.getActionListeners()) {
+                    toggleButton.removeActionListener(al);
+                }
+
+                // Add functionality to the toggle button
+                toggleButton.addActionListener(toggleEvent -> {
+                    if (id != Integer.MIN_VALUE) {
+                        boolean currentStatus = librarianDetails.contains("Active: Yes");
+                        boolean success = admin.updateAccountStatus("librarian", id, !currentStatus);
+                        if (success) {
+                            JOptionPane.showMessageDialog(null, "Account status updated successfully!");
+                            // Refresh the details
+                            String updatedDetails = admin.getLibrarianDetails(id);
+                            detailsArea.setText("=== Librarian Details ===\n\n" + updatedDetails);
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Failed to update account status.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                });
+            });
+
+            studentPanel.revalidate();
+            studentPanel.repaint();
         });
-        
+
         logoutButton.addActionListener(e -> adminFrame.dispose()); // Close the admin dashboard
 
         // Add navigation and content panels to the frame

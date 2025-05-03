@@ -4,6 +4,7 @@ import Backend.Admin;
 import Backend.Database;
 import javax.swing.*;
 import javax.xml.crypto.Data;
+import java.util.List;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -84,19 +85,15 @@ public class AdminPanel {
             leftPanel.add(optionsPanel, "Options");
 
             // Add panel for adding a librarian
-            JPanel addLibrarianPanel = new JPanel(new GridLayout(6, 2, 10, 10));
+            JPanel addLibrarianPanel = new JPanel(new GridLayout(4, 2, 10, 10));
             addLibrarianPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
             JLabel nameLabel = new JLabel("Name:");
             JTextField nameField = new JTextField(20);
-            JLabel idLabel = new JLabel("ID:");
-            JTextField idField = new JTextField(20);
             JLabel passwordLabel = new JLabel("Password:");
             JPasswordField passwordField = new JPasswordField(20);
             JButton submitAddButton = new JButton("Submit");
             addLibrarianPanel.add(nameLabel);
             addLibrarianPanel.add(nameField);
-            addLibrarianPanel.add(idLabel);
-            addLibrarianPanel.add(idField);
             addLibrarianPanel.add(passwordLabel);
             addLibrarianPanel.add(passwordField);
             addLibrarianPanel.add(new JLabel()); // Empty cell for spacing
@@ -166,18 +163,16 @@ public class AdminPanel {
 
             submitAddButton.addActionListener(submitAddEvent -> {
                 String name = nameField.getText().trim();
-                String idStr = idField.getText().trim();
                 String password = new String(passwordField.getPassword()).trim();
 
-                if (name.isEmpty() || idStr.isEmpty() || password.isEmpty()) {
+                if (name.isEmpty() || password.isEmpty()) {
                     JOptionPane.showMessageDialog(null, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
                 try {
-                    int id = Integer.parseInt(idStr);
                     Admin admin = new Admin();
-                    admin.insertLibrarian(name, id, password); // Add librarian to the database
+                    admin.insertLibrarian(name, password); // Add librarian to the database
                     JOptionPane.showMessageDialog(null, "Librarian added successfully!"); // Show success message
 
                     // Refresh the librarian list
@@ -191,10 +186,16 @@ public class AdminPanel {
                         JOptionPane.showMessageDialog(null, "Error adding librarian: " + ex.getMessage(), "Error",
                                 JOptionPane.ERROR_MESSAGE);
                     }
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(null, "Invalid ID format. Please enter a number.", "Error",
-                            JOptionPane.ERROR_MESSAGE);
-                } 
+                } catch (RuntimeException ex) {
+                    // Check if the exception message is about the password being in use
+                    if (ex.getMessage().contains("Password is already in use")) {
+                        JOptionPane.showMessageDialog(null, "Password is already in use. Please choose another password.", "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Error adding librarian: " + ex.getMessage(), "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                }
             });
 
             // Add functionality to the "Delete Librarian" button
@@ -219,14 +220,20 @@ public class AdminPanel {
                             JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-
+            
                 try {
                     int id = Integer.parseInt(idStr);
                     Admin admin = new Admin();
-                    admin.deleteLibrarian(id);
-                    JOptionPane.showMessageDialog(null, "Librarian deleted successfully!");
-                    
-                    // Refresh the list
+                    boolean isDeleted = admin.deleteLibrarian(id);
+            
+                    if (isDeleted) {
+                        JOptionPane.showMessageDialog(null, "Librarian deleted successfully!");
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Librarian with ID " + id + " does not exist.", "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+            
+                    // Refresh the librarian list
                     librarianListArea.setText("Current Librarians:\n");
                     librarianListArea.append("ID\tName\tPassword\n");
                     librarianListArea.append("---------------------------------\n");
@@ -250,56 +257,55 @@ public class AdminPanel {
             cardLayout.show(contentPanel, "FineReport"); // Show the Fine Report panel
             fineReportPanel.removeAll(); // Clear the panel before adding new components
             fineReportPanel.setLayout(new BorderLayout());
-            
+        
             JTextArea fineReportArea = new JTextArea();
             fineReportArea.setEditable(false);
             JScrollPane scrollPane = new JScrollPane(fineReportArea);
             fineReportPanel.add(scrollPane, BorderLayout.CENTER);
-
+        
             // Fetch and display fine details
             Admin admin = new Admin();
-            fineReportArea.setText("Fine Report:\n");
-            fineReportArea.append("Issue ID\tStudent ID\tBook ID\tFine Amount\n");
-            fineReportArea.append("-------------------------------------------------\n");
-
+            fineReportArea.setText("=== Fine Report ===\n\n");
+        
             try {
                 // Fetch individual fine details
-                String sql = "SELECT fine, student_id, book_id, issue_id, MONTH(issue_date) as month FROM issued_books WHERE fine > 0";
-                Map<Integer, Double> monthlyFines = new HashMap<>(); // To store month-wise total fines
+                String sql = "SELECT issue_id, student_id, book_id, fine, MONTH(issue_date) AS month " +
+                             "FROM issued_books WHERE fine > 0";
                 try (Connection con = Admin.connect();
-                    Statement stmt = con.createStatement();
-                    ResultSet rs = stmt.executeQuery(sql)) {
+                     Statement stmt = con.createStatement();
+                     ResultSet rs = stmt.executeQuery(sql)) {
+                    fineReportArea.append("Individual Fines:\n");
+                    fineReportArea.append("Issue ID\tStudent ID\tBook ID\tFine Amount\n");
+                    fineReportArea.append("-------------------------------------------------\n");
+        
                     while (rs.next()) {
                         int issueId = rs.getInt("issue_id");
                         int studentId = rs.getInt("student_id");
                         int bookId = rs.getInt("book_id");
                         double fine = rs.getDouble("fine");
-                        int month = rs.getInt("month");
-
-                        // Append individual fine details
+        
                         fineReportArea.append(issueId + "\t" + studentId + "\t" + bookId + "\t" + fine + "\n");
-
-                        // Calculate month-wise total fines
-                        monthlyFines.put(month, monthlyFines.getOrDefault(month, 0.0) + fine);
                     }
                 }
-
-                // Append month-wise total fines
-                fineReportArea.append("\nMonth-wise Total Fines:\n");
+        
+                // Fetch monthly fines
+                List<Double> monthlyFines = admin.viewMonthlyFines();
+                fineReportArea.append("\nMonthly Fines:\n");
                 fineReportArea.append("Month\tTotal Fine Amount\n");
                 fineReportArea.append("----------------------------\n");
-                for (Map.Entry<Integer, Double> entry : monthlyFines.entrySet()) {
-                    fineReportArea.append(entry.getKey() + "\t" + entry.getValue() + "\n");
+        
+                for (int i = 0; i < monthlyFines.size(); i++) {
+                    fineReportArea.append((i + 1) + "\t" + monthlyFines.get(i) + "\n");
                 }
-
-                // Append overall total fine
-                double totalFine = monthlyFines.values().stream().mapToDouble(Double::doubleValue).sum();
+        
+                // Calculate overall total fine
+                double totalFine = monthlyFines.stream().mapToDouble(Double::doubleValue).sum();
                 fineReportArea.append("\nOverall Total Fine: Rs. " + totalFine);
-
+        
             } catch (SQLException ex) {
                 fineReportArea.append("Error fetching fine data: " + ex.getMessage());
             }
-            
+        
             fineReportPanel.revalidate();
             fineReportPanel.repaint();
         });

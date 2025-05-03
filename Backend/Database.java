@@ -87,7 +87,7 @@ public class Database {
                         "due_date DATE," +
                         "issue_date DATETIME DEFAULT CURRENT_TIMESTAMP," +
                         "status ENUM('issued', 'returned', 'overdue') DEFAULT 'issued'," +
-                        "fine INT DEFAULT 0" +
+                        "fine INT DEFAULT 0.0" +
                         ");";
                 queryExecute(conn, createTableIssueBooks);
 

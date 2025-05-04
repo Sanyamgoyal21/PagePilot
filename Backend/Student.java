@@ -10,7 +10,7 @@ public class Student {
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
-    static final String PASS = "Sanyam@123";
+    static final String PASS = "Sanki@2004";
 
     
     // Establish connection
@@ -19,7 +19,7 @@ public class Student {
     }
 
     public static int login(String username, String password) {
-        String sql = "SELECT id FROM student WHERE id = ? AND password = ? AND active = TRUE";
+        String sql = "SELECT id FROM student WHERE name = ? AND password = ? AND active = TRUE";
         try (Connection con = Database.connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setString(1, username);

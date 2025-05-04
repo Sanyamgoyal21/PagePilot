@@ -13,7 +13,7 @@ public class Librarian {
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
-    static final String PASS = "Sanki@2004";
+    static final String PASS = "Sanyam@123";
 
 
 
@@ -493,7 +493,7 @@ public class Librarian {
 
 
     public static boolean login(String username, String password) {
-        String sql = "SELECT * FROM librarian WHERE name = ? AND password = ?";
+        String sql = "SELECT * FROM librarian WHERE id = ? AND password = ?";
         try (Connection con = Database.connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setString(1, username);
@@ -516,7 +516,7 @@ public class Librarian {
 
 
     public static boolean isActive(String username) {
-        String sql = "SELECT active FROM librarian WHERE name = ?";
+        String sql = "SELECT active FROM librarian WHERE id = ?";
         try (Connection con = Database.connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setString(1, username);

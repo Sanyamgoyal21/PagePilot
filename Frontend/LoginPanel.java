@@ -12,7 +12,7 @@ public class LoginPanel {
     private static void placeComponents(JPanel panel) {
         panel.setLayout(null);
 
-        JLabel userLabel = new JLabel("User");
+        JLabel userLabel = new JLabel("ID");
         JLabel passwordLabel = new JLabel("Password");
         JLabel roleLabel = new JLabel("Role");
         JTextField userText = new JTextField(20);

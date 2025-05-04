@@ -8,7 +8,7 @@ public class Admin {
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
-    static final String PASS = "Sanki@2004";
+    static final String PASS = "Sanyam@123";
 
     // Establish connection
     public static Connection connect() throws SQLException {
@@ -283,7 +283,7 @@ public class Admin {
     }
 
     public static boolean login(String username, String password) {
-        String sql = "SELECT * FROM admin WHERE name = ? AND password = ?";
+        String sql = "SELECT * FROM admin WHERE id = ? AND password = ?";
         try (Connection con = connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setString(1, username);

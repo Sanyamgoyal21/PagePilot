@@ -18,7 +18,7 @@ public class Student {
     }
 
     public static int login(String username, String password) {
-        String sql = "SELECT id FROM student WHERE email = ? AND password = ?";
+        String sql = "SELECT id FROM student WHERE id = ? AND password = ?";
         try (Connection con = Database.connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setString(1, username);

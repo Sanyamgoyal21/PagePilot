@@ -81,17 +81,12 @@ public class LoginPanel {
 
                     case "Admin":
                         if (Admin.login(username, password)) {
-                            if (Admin.isActive(username)) { // Check if the admin is active
                                 loginSuccess = true;
                                 successLabel.setText("Login successful as Admin!");
                                 AdminPanel.displayAdminPage(); // Redirect to AdminPanel
-                            } else {
-                                successLabel.setText("Access denied. Admin account is inactive.");
                             }
-                        }
                         break;
                 }
-
                 if (!loginSuccess && successLabel.getText().isEmpty()) {
                     successLabel.setText("Invalid username or password.");
                 }

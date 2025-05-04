@@ -75,8 +75,11 @@ public class LibrarianPanel {
         JPanel manageStudentRecordsPanel = createManageStudentRecordsPanel();
         contentPanel.add(manageStudentRecordsPanel, "ManageStudentRecords");
 
+        // Request Approval Panel
+        JPanel requestApprovalPanel = createRequestApprovalPanel();
+        contentPanel.add(requestApprovalPanel, "RequestApproval");
+
         // Placeholder panels for other features
-        JPanel requestApprovalPanel = createFeaturePanel("Request Approval");
         JPanel viewOverdueBooksPanel = createViewOverdueBooksPanel();
         contentPanel.add(viewOverdueBooksPanel, "ViewOverdueBooks");
 
@@ -84,7 +87,6 @@ public class LibrarianPanel {
         contentPanel.add(placeholderPanel, "Placeholder");
         contentPanel.add(addViewDeleteBooksPanel, "AddViewDeleteBooks");
         contentPanel.add(returnBooksPanel, "ReturnBooks");
-        contentPanel.add(requestApprovalPanel, "RequestApproval");
 
         // Add action listeners to buttons
         addViewDeleteBooksButton.addActionListener(e -> cardLayout.show(contentPanel, "AddViewDeleteBooks"));
@@ -769,6 +771,79 @@ public class LibrarianPanel {
         return manageStudentRecordsPanel;
     }
 
+    private static JPanel createRequestApprovalPanel() {
+        JPanel requestApprovalPanel = new JPanel(new BorderLayout());
+
+        // Table for displaying requests
+        DefaultTableModel tableModel = new DefaultTableModel(
+                new String[] { "Request ID", "Student ID", "Request Type", "Book Title", "Author", "Reason/Description",
+                        "Request Date", "Status" },
+                0);
+        JTable requestsTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(requestsTable);
+        requestApprovalPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Buttons for approving or rejecting requests
+        JButton approveButton = new JButton("Approve");
+        JButton rejectButton = new JButton("Reject");
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(approveButton);
+        buttonPanel.add(rejectButton);
+        requestApprovalPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Refresh requests table initially
+        refreshRequestsTable(tableModel);
+
+        // Add action listener for the Approve button
+        approveButton.addActionListener(e -> {
+            int selectedRow = requestsTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(null, "Please select a request to approve.", "No Selection",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int requestId = (int) tableModel.getValueAt(selectedRow, 0);
+            String requestType = (String) tableModel.getValueAt(selectedRow, 2);
+
+            Librarian librarian = new Librarian();
+            boolean success = librarian.approveRequest(requestId, requestType);
+            if (success) {
+                JOptionPane.showMessageDialog(null, "Request approved successfully!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                refreshRequestsTable(tableModel); // Refresh the table
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to approve the request. Please try again.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Add action listener for the Reject button
+        rejectButton.addActionListener(e -> {
+            int selectedRow = requestsTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(null, "Please select a request to reject.", "No Selection",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int requestId = (int) tableModel.getValueAt(selectedRow, 0);
+
+            Librarian librarian = new Librarian();
+            boolean success = librarian.rejectRequest(requestId);
+            if (success) {
+                JOptionPane.showMessageDialog(null, "Request rejected successfully!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                refreshRequestsTable(tableModel); // Refresh the table
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to reject the request. Please try again.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        return requestApprovalPanel;
+    }
+
     private static JPanel createViewOverdueBooksPanel() {
         JPanel overdueBooksPanel = new JPanel(new BorderLayout());
 
@@ -941,6 +1016,21 @@ public class LibrarianPanel {
 
         if (studentData.isEmpty()) {
             JOptionPane.showMessageDialog(null, "No student data found.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private static void refreshRequestsTable(DefaultTableModel tableModel) {
+        tableModel.setRowCount(0); // Clear the table
+        Librarian librarian = new Librarian();
+        List<Object[]> requests = librarian.viewRequests();
+
+        for (Object[] row : requests) {
+            tableModel.addRow(row);
+        }
+
+        if (requests.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No requests found.", "Information",
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 

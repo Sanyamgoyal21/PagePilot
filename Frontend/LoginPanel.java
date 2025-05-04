@@ -55,31 +55,44 @@ public class LoginPanel {
 
                 switch (selectedRole) {
                     case "Student":
-                        loginSuccess = Student.login(username, password);
-                        if (loginSuccess) {
-                            successLabel.setText("Login successful as Student!");
-                            StudentPanel.displayStudentPage(); // Redirect to StudentPanel
+                        int studentId = Student.login(username, password); // Return student ID on successful login
+                        if (studentId != -1) {
+                            if (Student.isActive(studentId)) { // Check if the student is active
+                                loginSuccess = true;
+                                successLabel.setText("Login successful as Student!");
+                                StudentPanel.displayStudentPage(studentId); // Pass the student ID to StudentPanel
+                            } else {
+                                successLabel.setText("Access denied. Student account is inactive.");
+                            }
                         }
                         break;
 
                     case "Librarian":
-                        loginSuccess = Librarian.login(username, password);
-                        if (loginSuccess) {
-                            successLabel.setText("Login successful as Librarian!");
-                            LibrarianPanel.displayLibrarianPage(); // Redirect to LibrarianPanel
+                        if (Librarian.login(username, password)) {
+                            if (Librarian.isActive(username)) { // Check if the librarian is active
+                                loginSuccess = true;
+                                successLabel.setText("Login successful as Librarian!");
+                                LibrarianPanel.displayLibrarianPage(); // Redirect to LibrarianPanel
+                            } else {
+                                successLabel.setText("Access denied. Librarian account is inactive.");
+                            }
                         }
                         break;
 
                     case "Admin":
-                        loginSuccess = Admin.login(username, password);
-                        if (loginSuccess) {
-                            successLabel.setText("Login successful as Admin!");
-                            AdminPanel.displayAdminPage(); // Redirect to AdminPanel
+                        if (Admin.login(username, password)) {
+                            if (Admin.isActive(username)) { // Check if the admin is active
+                                loginSuccess = true;
+                                successLabel.setText("Login successful as Admin!");
+                                AdminPanel.displayAdminPage(); // Redirect to AdminPanel
+                            } else {
+                                successLabel.setText("Access denied. Admin account is inactive.");
+                            }
                         }
                         break;
                 }
 
-                if (!loginSuccess) {
+                if (!loginSuccess && successLabel.getText().isEmpty()) {
                     successLabel.setText("Invalid username or password.");
                 }
             }

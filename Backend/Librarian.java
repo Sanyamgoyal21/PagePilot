@@ -243,6 +243,34 @@ public class Librarian {
         return studentData;
     }
 
+    // View Requests
+    public List<Object[]> viewRequests() {
+        String sql = "SELECT id AS request_id, student_id, type AS request_type, " +
+                "book_title, author, reason, request_date, status " +
+                "FROM requests";
+
+        List<Object[]> requests = new ArrayList<>();
+        try (Connection con = connect();
+                PreparedStatement pst = con.prepareStatement(sql);
+                ResultSet rs = pst.executeQuery()) {
+            while (rs.next()) {
+                requests.add(new Object[] {
+                        rs.getInt("request_id"),
+                        rs.getInt("student_id"),
+                        rs.getString("request_type"),
+                        rs.getString("book_title"),
+                        rs.getString("author"),
+                        rs.getString("reason"),
+                        rs.getDate("request_date"),
+                        rs.getString("status")
+                });
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return requests;
+    }
+
     // Delete Book by ID
     public boolean deleteBookById(int id) {
         String sql = "DELETE FROM books WHERE id = ?";
@@ -398,6 +426,128 @@ public class Librarian {
             pst.setString(2, password);
             ResultSet rs = pst.executeQuery();
             return rs.next(); // Return true if a matching record is found
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static boolean isActive(String username) {
+        String sql = "SELECT active FROM librarian WHERE name = ?";
+        try (Connection con = Database.connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setString(1, username);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBoolean("active");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false; // Default to inactive if not found or error occurs
+    }
+
+    public List<Object[]> searchIssuedBooks(int studentId, String searchBy, String value) {
+        String sql = "SELECT issued_books.issue_id, issued_books.book_id, books.title, books.author, " +
+                "issued_books.issue_date, issued_books.due_date, issued_books.fine, issued_books.status " +
+                "FROM issued_books " +
+                "JOIN books ON issued_books.book_id = books.id " +
+                "WHERE issued_books.student_id = ?";
+
+        if (searchBy != null && value != null) {
+            switch (searchBy) {
+                case "book_id":
+                    sql += " AND issued_books.book_id = ?";
+                    break;
+                case "title":
+                    sql += " AND LOWER(books.title) LIKE ?";
+                    break;
+                case "author":
+                    sql += " AND LOWER(books.author) LIKE ?";
+                    break;
+            }
+        }
+
+        List<Object[]> issuedBooks = new ArrayList<>();
+        try (Connection con = Database.connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setInt(1, studentId);
+            if (searchBy != null && value != null) {
+                if (searchBy.equals("title") || searchBy.equals("author")) {
+                    pst.setString(2, "%" + value.trim().toLowerCase() + "%"); // Use LIKE for title and author
+                } else {
+                    pst.setString(2, value.trim()); // Use exact match for other fields
+                }
+            }
+
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    issuedBooks.add(new Object[] {
+                            rs.getInt("issue_id"),
+                            rs.getInt("book_id"),
+                            rs.getString("title"),
+                            rs.getString("author"),
+                            rs.getDate("issue_date"),
+                            rs.getDate("due_date"),
+                            rs.getInt("fine"),
+                            rs.getString("status")
+                    });
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return issuedBooks;
+    }
+
+    public boolean approveRequest(int requestId, String requestType) {
+        String updateRequestSql = "UPDATE requests SET status = 'Approved' WHERE id = ?";
+        String addBookSql = "INSERT INTO books (title, author, total_copies, available_copies) VALUES (?, ?, 5, 5)";
+
+        try (Connection con = connect();
+                PreparedStatement updateRequestPst = con.prepareStatement(updateRequestSql);
+                PreparedStatement addBookPst = con.prepareStatement(addBookSql)) {
+
+            // Approve the request
+            updateRequestPst.setInt(1, requestId);
+            updateRequestPst.executeUpdate();
+
+            // If the request is for a new book, add the book to the library
+            if ("New Book".equalsIgnoreCase(requestType)) {
+                // Fetch book details from the request
+                String fetchRequestSql = "SELECT book_title, author FROM requests WHERE id = ?";
+                try (PreparedStatement fetchRequestPst = con.prepareStatement(fetchRequestSql)) {
+                    fetchRequestPst.setInt(1, requestId);
+                    try (ResultSet rs = fetchRequestPst.executeQuery()) {
+                        if (rs.next()) {
+                            String bookTitle = rs.getString("book_title");
+                            String author = rs.getString("author");
+
+                            // Add the book to the library
+                            addBookPst.setString(1, bookTitle);
+                            addBookPst.setString(2, author);
+                            addBookPst.executeUpdate();
+                        }
+                    }
+                }
+            }
+
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean rejectRequest(int requestId) {
+        String sql = "UPDATE requests SET status = 'Rejected' WHERE id = ?";
+
+        try (Connection con = connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setInt(1, requestId);
+            int rowsAffected = pst.executeUpdate();
+            return rowsAffected > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }

@@ -132,13 +132,43 @@ public class Database {
                 queryExecute(conn, createTableNotification);
 
                 String createTableRequests = "CREATE TABLE IF NOT EXISTS requests (" +
-                        "request_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
+                        "id INT AUTO_INCREMENT PRIMARY KEY," +
                         "student_id INT NOT NULL," +
-                        "request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-                        "status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending'," +
-                        "notes TEXT" +
+                        "type ENUM('New Book', 'Hold Book') NOT NULL," +
+                        "book_title VARCHAR(255)," +
+                        "author VARCHAR(255)," +
+                        "reason TEXT," +
+                        "request_date DATE NOT NULL," +
+                        "status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending'," +
+                        "FOREIGN KEY (student_id) REFERENCES student(id)" +
                         ");";
                 queryExecute(conn, createTableRequests);
+
+                String createTableBookRequests = "CREATE TABLE IF NOT EXISTS book_requests (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY," +
+                        "student_id INT NOT NULL," +
+                        "title VARCHAR(255) NOT NULL," +
+                        "author VARCHAR(255) NOT NULL," +
+                        "description TEXT," +
+                        "request_date DATE NOT NULL," +
+                        "FOREIGN KEY (student_id) REFERENCES student(id)" +
+                        ");";
+                queryExecute(conn, createTableBookRequests);
+
+                String createTableHoldRequests = "CREATE TABLE IF NOT EXISTS hold_requests (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY," +
+                        "student_id INT NOT NULL," +
+                        "book_id INT NOT NULL," +
+                        "book_name VARCHAR(255) NOT NULL," +
+                        "author_name VARCHAR(255) NOT NULL," +
+                        "reason TEXT NOT NULL," +
+                        "hold_date DATE NOT NULL," +
+                        "expired_date DATE NOT NULL," +
+                        "status ENUM('Pending', 'Expired') DEFAULT 'Pending'," +
+                        "FOREIGN KEY (student_id) REFERENCES student(id)," +
+                        "FOREIGN KEY (book_id) REFERENCES books(id)" +
+                        ");";
+                queryExecute(conn, createTableHoldRequests);
 
                 System.out.println("✅ Database and all tables created successfully.");
             }

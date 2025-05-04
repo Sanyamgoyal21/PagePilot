@@ -21,14 +21,27 @@ public class StudentPanel {
         navigationPanel.setPreferredSize(new Dimension(200, 0)); // Fixed width for navigation
 
         // Buttons for navigation
-        JButton borrowBooksButton = new JButton("Borrow Books");
-        JButton returnBooksButton = new JButton("Return Books and Pay Fines");
-        JButton viewBorrowingStatusButton = new JButton("View Borrowing Status");
+        // JButton borrowBooksButton = new JButton("Borrow Books");
+        // JButton returnBooksButton = new JButton("Return Books and Pay Fines");
+        // JButton viewBorrowingStatusButton = new JButton("View Borrowing Status");
+        // JButton requestNewBooksButton = new JButton("Request New Books");
+        // JButton requestHoldBooksButton = new JButton("Request Hold Books (1 Week)");
+        // JButton reissueBooksButton = new JButton("Reissue Borrowed Books");
+        // JButton viewNotificationsButton = new JButton("View Notifications (Due Dates, Fines, Approvals)");
+        // JButton logoutButton = new JButton("Logout");
+
+
+
+        JButton borrowBooksButton = new JButton("Issue Books");
+        JButton returnBooksButton = new JButton("Return Books & Pay Fines");
+        JButton viewBorrowingStatusButton = new JButton("Borrowing Status");
         JButton requestNewBooksButton = new JButton("Request New Books");
-        JButton requestHoldBooksButton = new JButton("Request Hold Books (1 Week)");
-        JButton reissueBooksButton = new JButton("Reissue Borrowed Books");
-        JButton viewNotificationsButton = new JButton("View Notifications (Due Dates, Fines, Approvals)");
-        JButton logoutButton = new JButton("Logout");
+        JButton requestHoldBooksButton = new JButton("Place Hold (1 Week)");
+        JButton reissueBooksButton = new JButton("Reissue Books");
+        JButton viewNotificationsButton = new JButton("View Notifications");
+        JButton logoutButton = new JButton("Log Out");
+
+
 
         // Add buttons to the navigation panel
         navigationPanel.add(borrowBooksButton);
@@ -595,9 +608,9 @@ public class StudentPanel {
             tableModel.addRow(row);
         }
 
-        if (books.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No books found.", "Information", JOptionPane.INFORMATION_MESSAGE);
-        }
+        // if (books.isEmpty()) {
+        //     JOptionPane.showMessageDialog(null, "No books found.", "Information", JOptionPane.INFORMATION_MESSAGE);
+        // }
     }
 
     // Helper method to refresh the issued books table by student ID
@@ -641,10 +654,10 @@ public class StudentPanel {
             tableModel.addRow(row);
         }
 
-        if (requests.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No book requests found.", "Information",
-                    JOptionPane.INFORMATION_MESSAGE);
-        }
+        // if (requests.isEmpty()) {
+        //     JOptionPane.showMessageDialog(null, "No book requests found.", "Information",
+        //             JOptionPane.INFORMATION_MESSAGE);
+        // }
     }
 
     // Helper method to refresh the available books table
@@ -673,10 +686,10 @@ public class StudentPanel {
             tableModel.addRow(row);
         }
 
-        if (holdRequests.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No hold requests found.", "Information",
-                    JOptionPane.INFORMATION_MESSAGE);
-        }
+        // if (holdRequests.isEmpty()) {
+        //     JOptionPane.showMessageDialog(null, "No hold requests found.", "Information",
+        //             JOptionPane.INFORMATION_MESSAGE);
+        // }
     }
 
     // Helper method to refresh the borrowed books table by student ID

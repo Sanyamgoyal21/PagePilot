@@ -623,10 +623,10 @@ public class StudentPanel {
             tableModel.addRow(row);
         }
 
-        if (issuedBooks.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No issued books found.", "Information",
-                    JOptionPane.INFORMATION_MESSAGE);
-        }
+        // if (issuedBooks.isEmpty()) {
+        //     JOptionPane.showMessageDialog(null, "No issued books found.", "Information",
+        //             JOptionPane.INFORMATION_MESSAGE);
+        // }
     }
 
     // Overloaded helper method to refresh the issued books table with a list of
@@ -638,10 +638,10 @@ public class StudentPanel {
             tableModel.addRow(row);
         }
 
-        if (issuedBooks.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No issued books found.", "Information",
-                    JOptionPane.INFORMATION_MESSAGE);
-        }
+        // if (issuedBooks.isEmpty()) {
+        //     JOptionPane.showMessageDialog(null, "No issued books found.", "Information",
+        //             JOptionPane.INFORMATION_MESSAGE);
+        // }
     }
 
     // Helper method to refresh the requests table
@@ -670,10 +670,10 @@ public class StudentPanel {
             tableModel.addRow(row);
         }
 
-        if (books.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No available books found.", "Information",
-                    JOptionPane.INFORMATION_MESSAGE);
-        }
+        // if (books.isEmpty()) {
+        //     JOptionPane.showMessageDialog(null, "No available books found.", "Information",
+        //             JOptionPane.INFORMATION_MESSAGE);
+        // }
     }
 
     // Helper method to refresh the hold requests table
@@ -702,10 +702,10 @@ public class StudentPanel {
             tableModel.addRow(row);
         }
 
-        if (borrowedBooks.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No borrowed books found.", "Information",
-                    JOptionPane.INFORMATION_MESSAGE);
-        }
+        // if (borrowedBooks.isEmpty()) {
+        //     JOptionPane.showMessageDialog(null, "No borrowed books found.", "Information",
+        //             JOptionPane.INFORMATION_MESSAGE);
+        // }
     }
 
     // Overloaded helper method to refresh the borrowed books table with a list of books

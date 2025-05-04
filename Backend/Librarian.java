@@ -13,7 +13,7 @@ public class Librarian {
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
-    static final String PASS = "Sanyam@123";
+    static final String PASS = "Sanki@2004";
 
 
 
@@ -554,7 +554,7 @@ public class Librarian {
 
 
     public static boolean isActive(String username) {
-        String sql = "SELECT active FROM librarian WHERE id = ?";
+        String sql = "SELECT active FROM librarian WHERE name = ?";
         try (Connection con = Database.connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setString(1, username);

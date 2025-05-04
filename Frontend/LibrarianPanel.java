@@ -776,7 +776,7 @@ public class LibrarianPanel {
 
         // Table for displaying requests
         DefaultTableModel tableModel = new DefaultTableModel(
-                new String[] { "Request ID", "Student ID", "Request Type", "Book Title", "Author", "Reason/Description",
+                new String[] { "Request ID", "Student ID", "Book Title", "Author", "Reason/Description",
                         "Request Date", "Status" },
                 0);
         JTable requestsTable = new JTable(tableModel);

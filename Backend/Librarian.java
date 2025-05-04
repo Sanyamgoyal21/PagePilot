@@ -637,6 +637,35 @@ public class Librarian {
         return false;
     }
 
+    public static boolean resetPassword(String username, String email, String newPassword) {
+        String sql = "UPDATE librarian SET password = ? WHERE name = ? AND email = ? AND active = TRUE";
+        try (Connection con = Database.connect();
+             PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setString(1, newPassword);
+            pst.setString(2, username);
+            pst.setString(3, email);
+            int rowsAffected = pst.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static boolean verifyEmail(String username, String email) {
+        String sql = "SELECT id FROM librarian WHERE name = ? AND email = ? AND active = TRUE";
+        try (Connection con = Database.connect();
+             PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setString(1, username);
+            pst.setString(2, email);
+            ResultSet rs = pst.executeQuery();
+            return rs.next();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public static void main(String[] args) {
         Librarian librarian = new Librarian();
         librarian.addOrUpdateBook("Java Programming", "John Doe", 5, 5);

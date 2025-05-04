@@ -8,7 +8,7 @@ public class Database {
     static final String DB_URL_WITHOUT_DB = "jdbc:mysql://localhost:3306/";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
-    static final String PASS = "Sanyam@123"; // Replace with your actual password
+    static final String PASS = "Sanki@2004"; // Replace with your actual password
 
     // Connect without selecting a database (used for CREATE DATABASE)
     public static Connection connectWithoutDB() throws SQLException {
@@ -140,6 +140,8 @@ public class Database {
                         "reason TEXT," +
                         "request_date DATE NOT NULL," +
                         "status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending'," +
+                        "description TEXT," +
+                        "notes VARCHAR(255)," +
                         "FOREIGN KEY (student_id) REFERENCES student(id)" +
                         ");";
                 queryExecute(conn, createTableRequests);
@@ -151,6 +153,7 @@ public class Database {
                         "author VARCHAR(255) NOT NULL," +
                         "description TEXT," +
                         "request_date DATE NOT NULL," +
+                        "status VARCHAR(50) DEFAULT 'Pending'," +
                         "FOREIGN KEY (student_id) REFERENCES student(id)" +
                         ");";
                 queryExecute(conn, createTableBookRequests);
@@ -161,16 +164,16 @@ public class Database {
                         "book_id INT NOT NULL," +
                         "book_name VARCHAR(255) NOT NULL," +
                         "author_name VARCHAR(255) NOT NULL," +
-                        "reason TEXT NOT NULL," +
+                        "reason TEXT," +
                         "hold_date DATE NOT NULL," +
                         "expired_date DATE NOT NULL," +
-                        "status ENUM('Pending', 'Expired') DEFAULT 'Pending'," +
+                        "status VARCHAR(50) DEFAULT 'Pending'," +
                         "FOREIGN KEY (student_id) REFERENCES student(id)," +
                         "FOREIGN KEY (book_id) REFERENCES books(id)" +
                         ");";
                 queryExecute(conn, createTableHoldRequests);
 
-                System.out.println("✅ Database and all tables created successfully.");
+                System.out.println("Database and all tables created successfully.");
             }
 
         } catch (ClassNotFoundException e) {

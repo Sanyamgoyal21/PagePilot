@@ -4,6 +4,7 @@ import java.util.*;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 import javax.swing.JOptionPane;
 
@@ -12,7 +13,9 @@ public class Librarian {
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
-    static final String PASS = "Sanyam@123";
+    static final String PASS = "Sanki@2004";
+
+
 
     public static Connection connect() throws SQLException {
         return DriverManager.getConnection(DB_URL, USER, PASS);
@@ -152,58 +155,72 @@ public class Librarian {
         return null;
     }
 
+    
+
     // View Overdue Books
     public List<Object[]> viewOverdueBooks(String searchBy, String value) {
-        String sql = "SELECT issued_books.issue_id, issued_books.book_id, books.title, books.author, " +
-                "issued_books.student_id, issued_books.issue_date, issued_books.due_date, issued_books.fine " +
-                "FROM issued_books " +
-                "JOIN books ON issued_books.book_id = books.id " +
-                "WHERE issued_books.status = 'overdue'";
-
-        if (searchBy != null && value != null) {
-            switch (searchBy) {
-                case "book_id":
-                    sql += " AND issued_books.book_id = ?";
-                    break;
-                case "title":
-                    sql += " AND books.title LIKE ?";
-                    break;
-                case "author":
-                    sql += " AND books.author LIKE ?";
-                    break;
-            }
-        }
-
         List<Object[]> overdueBooks = new ArrayList<>();
-        try (Connection con = Database.connect();
-                PreparedStatement pst = con.prepareStatement(sql)) {
-            if (searchBy != null && value != null) {
+        String sql = """
+            SELECT i.issue_id, i.book_id, b.title, b.author, 
+                   i.student_id, i.issue_date, i.due_date, 
+                   CASE 
+                       WHEN i.status = 'overdue' THEN i.fine
+                       ELSE DATEDIFF(CURRENT_DATE(), i.due_date) * 10 
+                   END as fine
+            FROM issued_books i 
+            JOIN books b ON i.book_id = b.id
+            WHERE (i.status = 'issued' AND i.due_date < CURRENT_DATE())
+               OR i.status = 'overdue'
+            ORDER BY i.due_date ASC
+        """;
+    
+        if (searchBy != null && !value.trim().isEmpty()) {
+            sql += switch (searchBy) {
+                case "book_id" -> " AND i.book_id = ?";
+                case "student_id" -> " AND i.student_id = ?";
+                case "title" -> " AND LOWER(b.title) LIKE ?";
+                case "author" -> " AND LOWER(b.author) LIKE ?";
+                default -> "";
+            };
+        }
+    
+        try (Connection con = connect();
+             PreparedStatement pst = con.prepareStatement(sql)) {
+            
+            if (searchBy != null && !value.trim().isEmpty()) {
                 if (searchBy.equals("title") || searchBy.equals("author")) {
-                    pst.setString(1, "%" + value + "%"); // Use LIKE for title and author
+                    pst.setString(1, "%" + value.toLowerCase() + "%");
                 } else {
-                    pst.setString(1, value); // Use exact match for other fields
+                    pst.setInt(1, Integer.parseInt(value));
                 }
             }
-
+    
             try (ResultSet rs = pst.executeQuery()) {
                 while (rs.next()) {
                     overdueBooks.add(new Object[] {
-                            rs.getInt("issue_id"),
-                            rs.getInt("book_id"),
-                            rs.getString("title"),
-                            rs.getString("author"),
-                            rs.getInt("student_id"),
-                            rs.getDate("issue_date"),
-                            rs.getDate("due_date"),
-                            rs.getInt("fine")
+                        rs.getInt("issue_id"),
+                        rs.getInt("book_id"),
+                        rs.getString("title"),
+                        rs.getString("author"),
+                        rs.getInt("student_id"),
+                        rs.getTimestamp("issue_date"),
+                        rs.getDate("due_date"),
+                        rs.getInt("fine")
                     });
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            JOptionPane.showMessageDialog(null, 
+                "Error retrieving overdue books: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
         }
         return overdueBooks;
     }
+
+
+
 
     // View Students
     public List<Object[]> viewStudents(String searchBy, String value) {
@@ -245,24 +262,23 @@ public class Librarian {
 
     // View Requests
     public List<Object[]> viewRequests() {
-        String sql = "SELECT id AS request_id, student_id, type AS request_type, " +
-                "book_title, author, reason, request_date, status " +
-                "FROM requests";
-
+        String sql = "SELECT request_id, student_id, title, author, description, " +
+                "request_date, status FROM requests";
         List<Object[]> requests = new ArrayList<>();
-        try (Connection con = connect();
-                PreparedStatement pst = con.prepareStatement(sql);
-                ResultSet rs = pst.executeQuery()) {
+        
+        try (Connection con = Database.connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            ResultSet rs = pst.executeQuery();
             while (rs.next()) {
                 requests.add(new Object[] {
-                        rs.getInt("request_id"),
-                        rs.getInt("student_id"),
-                        rs.getString("request_type"),
-                        rs.getString("book_title"),
-                        rs.getString("author"),
-                        rs.getString("reason"),
-                        rs.getDate("request_date"),
-                        rs.getString("status")
+                    rs.getInt("request_id"),
+                    rs.getInt("student_id"),
+                    rs.getString("title"),
+                    rs.getString("author"),
+                    rs.getString("description"),
+                    rs.getTimestamp("request_date"),
+                    rs.getString("status"),
+                    // rs.getString("notes")
                 });
             }
         } catch (SQLException e) {
@@ -270,6 +286,9 @@ public class Librarian {
         }
         return requests;
     }
+
+
+
 
     // Delete Book by ID
     public boolean deleteBookById(int id) {
@@ -284,6 +303,9 @@ public class Librarian {
         }
         return false;
     }
+
+
+
 
     public void seeBooks() {
         String sql = "SELECT * FROM books";
@@ -302,6 +324,9 @@ public class Librarian {
             e.printStackTrace();
         }
     }
+
+
+
 
     public boolean issueBookToStudent(int bookId, int studentId) {
         String checkStudentSql = "SELECT active FROM student WHERE id = ?";
@@ -365,6 +390,9 @@ public class Librarian {
         return false; // Operation failed
     }
 
+
+
+
     public boolean returnBook(int issueId, int bookId, int fine) {
         String updateStatusSql = "UPDATE issued_books SET status = 'returned', fine = ? WHERE issue_id = ?";
         String updateBookSql = "UPDATE books SET available_copies = available_copies + 1 WHERE id = ?";
@@ -389,19 +417,60 @@ public class Librarian {
         return false; // Operation failed
     }
 
+
+
+
+
+
     public boolean updateBookStatus(int issueId, String status) {
         String sql = "UPDATE issued_books SET status = ? WHERE issue_id = ?";
         try (Connection con = connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setString(1, status);
             pst.setInt(2, issueId);
-            pst.executeUpdate();
-            return true;
+            int rowsAffected = pst.executeUpdate();
+            return rowsAffected > 0;
         } catch (SQLException e) {
             e.printStackTrace();
+            JOptionPane.showMessageDialog(null,
+                "Error updating book status: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
         }
         return false;
     }
+
+    public void updateOverdueStatus() throws SQLException {
+        String sql = """
+            UPDATE issued_books 
+            SET status = 'overdue'
+            WHERE status = 'issued' 
+            AND due_date < CURRENT_DATE()
+        """;
+        
+        try (Connection con = Database.connect();
+             PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.executeUpdate();
+        }
+    }
+
+    public void updateFines() throws SQLException {
+        String sql = """
+            UPDATE issued_books 
+            SET fine = DATEDIFF(CURRENT_DATE(), due_date) * 10
+            WHERE status = 'overdue'
+            OR (status = 'issued' AND due_date < CURRENT_DATE())
+        """;
+        
+        try (Connection con = Database.connect();
+             PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.executeUpdate();
+        }
+    }
+
+
+
+
 
     public boolean updateStudentActiveStatus(int studentId, boolean isActive) {
         String sql = "UPDATE student SET active = ? WHERE id = ?";
@@ -418,6 +487,11 @@ public class Librarian {
         return false;
     }
 
+
+
+
+
+
     public static boolean login(String username, String password) {
         String sql = "SELECT * FROM librarian WHERE name = ? AND password = ?";
         try (Connection con = Database.connect();
@@ -431,6 +505,15 @@ public class Librarian {
         }
         return false;
     }
+
+
+
+
+
+
+
+
+
 
     public static boolean isActive(String username) {
         String sql = "SELECT active FROM librarian WHERE name = ?";
@@ -502,7 +585,7 @@ public class Librarian {
     }
 
     public boolean approveRequest(int requestId, String requestType) {
-        String updateRequestSql = "UPDATE requests SET status = 'Approved' WHERE id = ?";
+        String updateRequestSql = "UPDATE requests SET status = 'Approved' WHERE request_id = ?";
         String addBookSql = "INSERT INTO books (title, author, total_copies, available_copies) VALUES (?, ?, 5, 5)";
 
         try (Connection con = connect();
@@ -516,12 +599,12 @@ public class Librarian {
             // If the request is for a new book, add the book to the library
             if ("New Book".equalsIgnoreCase(requestType)) {
                 // Fetch book details from the request
-                String fetchRequestSql = "SELECT book_title, author FROM requests WHERE id = ?";
+                String fetchRequestSql = "SELECT title, author FROM requests WHERE request_id = ?";
                 try (PreparedStatement fetchRequestPst = con.prepareStatement(fetchRequestSql)) {
                     fetchRequestPst.setInt(1, requestId);
                     try (ResultSet rs = fetchRequestPst.executeQuery()) {
                         if (rs.next()) {
-                            String bookTitle = rs.getString("book_title");
+                            String bookTitle = rs.getString("title");
                             String author = rs.getString("author");
 
                             // Add the book to the library
@@ -541,7 +624,7 @@ public class Librarian {
     }
 
     public boolean rejectRequest(int requestId) {
-        String sql = "UPDATE requests SET status = 'Rejected' WHERE id = ?";
+        String sql = "UPDATE requests SET status = 'Rejected' WHERE request_id = ?";
 
         try (Connection con = connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {

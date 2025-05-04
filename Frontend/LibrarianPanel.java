@@ -847,64 +847,144 @@ public class LibrarianPanel {
     private static JPanel createViewOverdueBooksPanel() {
         JPanel overdueBooksPanel = new JPanel(new BorderLayout());
 
-        // Table for displaying overdue books
+        // Create table model with columns
         DefaultTableModel tableModel = new DefaultTableModel(
-                new String[] { "Issue ID", "Book ID", "Title", "Author", "Student ID", "Issue Date", "Due Date",
-                        "Fine" },
-                0);
+            new String[] {
+                "Issue ID", "Book ID", "Title", "Author", 
+                "Student ID", "Issue Date", "Due Date", "Fine", "Status"  // Added Status column
+            }, 0
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+            
+            // Override getColumnClass to properly format date columns
+            @Override
+            public Class<?> getColumnClass(int column) {
+                switch (column) {
+                    case 0, 1, 4, 7: return Integer.class;
+                    case 5, 6: return java.util.Date.class;
+                    default: return String.class;
+                }
+            }
+        };
+
         JTable overdueBooksTable = new JTable(tableModel);
+        overdueBooksTable.setAutoCreateRowSorter(true); // Enable sorting
         JScrollPane scrollPane = new JScrollPane(overdueBooksTable);
-        overdueBooksPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Search bar
-        JPanel searchPanel = new JPanel(new BorderLayout());
-        JTextField searchField = new JTextField();
+        // Search panel
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        String[] searchOptions = {"student_id", "book_id", "title", "author"};
+        JComboBox<String> searchByCombo = new JComboBox<>(searchOptions);
+        JTextField searchField = new JTextField(20);
         JButton searchButton = new JButton("Search");
-        searchPanel.add(new JLabel("Search by ID/Title/Author: "), BorderLayout.WEST);
-        searchPanel.add(searchField, BorderLayout.CENTER);
-        searchPanel.add(searchButton, BorderLayout.EAST);
-        overdueBooksPanel.add(searchPanel, BorderLayout.NORTH);
+        
+        searchPanel.add(new JLabel("Search by:"));
+        searchPanel.add(searchByCombo);
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
 
-        // Notify Students button
-        JButton notifyButton = new JButton("Notify Students");
-        JPanel buttonPanel = new JPanel();
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton refreshButton = new JButton("Refresh");
+        JButton notifyButton = new JButton("Notify Student");
+        JButton updateFineButton = new JButton("Update Fines"); // Added update fines button
+        buttonPanel.add(refreshButton);
         buttonPanel.add(notifyButton);
+        buttonPanel.add(updateFineButton);
+
+        // Layout
+        overdueBooksPanel.add(searchPanel, BorderLayout.NORTH);
+        overdueBooksPanel.add(scrollPane, BorderLayout.CENTER);
         overdueBooksPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-        // Add action listener for the Search button
+        // Search button action
         searchButton.addActionListener(e -> {
+            String searchType = (String) searchByCombo.getSelectedItem();
             String searchValue = searchField.getText().trim();
-            String searchBy = null;
-
-            if (searchValue.matches("\\d+")) {
-                searchBy = "book_id"; // Numeric input assumed to be Book ID
-            } else if (!searchValue.isEmpty()) {
-                searchBy = "title"; // Default to title search
+            
+            if (!searchValue.isEmpty()) {
+                Librarian librarian = new Librarian();
+                List<Object[]> results = librarian.viewOverdueBooks(searchType, searchValue);
+                refreshOverdueBooksTable(tableModel, results);
+            } else {
+                refreshOverdueBooksTable(tableModel, null);
             }
-
-            Librarian librarian = new Librarian();
-            List<Object[]> overdueBooks = librarian.viewOverdueBooks(searchBy, searchValue);
-            refreshOverdueBooksTable(tableModel, overdueBooks);
         });
 
-        // Add action listener for the Notify Students button
+        // Refresh button action
+        refreshButton.addActionListener(e -> {
+            updateOverdueBooksAndFines();  // First update overdue status and fines
+            refreshOverdueBooksTable(tableModel, null);  // Then refresh display
+        });
+
+        // Update fines button action
+        updateFineButton.addActionListener(e -> {
+            updateOverdueBooksAndFines();
+            refreshOverdueBooksTable(tableModel, null);
+            JOptionPane.showMessageDialog(null, 
+                "Fines have been updated for all overdue books.", 
+                "Fines Updated", 
+                JOptionPane.INFORMATION_MESSAGE);
+        });
+
+        // Notify button action
         notifyButton.addActionListener(e -> {
             int selectedRow = overdueBooksTable.getSelectedRow();
             if (selectedRow == -1) {
-                JOptionPane.showMessageDialog(null, "Please select a book to notify the student.", "No Selection",
-                        JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(null, 
+                    "Please select a book to notify the student.", 
+                    "No Selection", 
+                    JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            int studentId = (int) tableModel.getValueAt(selectedRow, 4);
-            JOptionPane.showMessageDialog(null, "Notification sent to Student ID: " + studentId, "Notification Sent",
-                    JOptionPane.INFORMATION_MESSAGE);
+            // Convert view index to model index if table is sorted
+            int modelRow = overdueBooksTable.convertRowIndexToModel(selectedRow);
+            
+            int studentId = (int) tableModel.getValueAt(modelRow, 4);
+            String bookTitle = (String) tableModel.getValueAt(modelRow, 2);
+            int fine = (int) tableModel.getValueAt(modelRow, 7);
+            java.util.Date dueDate = (java.util.Date) tableModel.getValueAt(modelRow, 6);
+
+            String message = String.format(
+                "Notification sent to Student ID: %d\n" +
+                "Book: %s\n" +
+                "Due Date: %s\n" +
+                "Fine Amount: ₹%d", 
+                studentId, bookTitle, dueDate.toString(), fine
+            );
+            
+            JOptionPane.showMessageDialog(null, 
+                message, 
+                "Notification Sent", 
+                JOptionPane.INFORMATION_MESSAGE);
         });
 
-        // Refresh overdue books table initially
+        // Initial data load with fine update
+        updateOverdueBooksAndFines();
         refreshOverdueBooksTable(tableModel, null);
 
         return overdueBooksPanel;
+    }
+
+    // Helper method to update overdue status and fines
+    private static void updateOverdueBooksAndFines() {
+        Librarian librarian = new Librarian();
+        try {
+            // First update the status of books to overdue if they are past due date
+            librarian.updateOverdueStatus();
+            // Then calculate and update fines for overdue books
+            librarian.updateFines();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(null,
+                "Error updating overdue books and fines: " + ex.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private static JPanel createFeaturePanel(String title) {
@@ -983,21 +1063,34 @@ public class LibrarianPanel {
     }
 
     private static void refreshOverdueBooksTable(DefaultTableModel tableModel, List<Object[]> overdueBooks) {
-        tableModel.setRowCount(0); // Clear the table
+        tableModel.setRowCount(0); // Clear existing rows
         Librarian librarian = new Librarian();
 
         // If overdueBooks is null, fetch all overdue books
         if (overdueBooks == null) {
             overdueBooks = librarian.viewOverdueBooks(null, null);
         }
-
-        for (Object[] row : overdueBooks) {
-            tableModel.addRow(row);
+        
+        for (Object[] book : overdueBooks) {
+            tableModel.addRow(new Object[]{
+                book[0], // issue_id
+                book[1], // book_id
+                book[2], // title
+                book[3], // author 
+                book[4], // student_id
+                book[5], // issue_date
+                book[6], // due_date
+                book[7],  // fine
+                book[8]   // status
+            });
         }
 
-        if (overdueBooks.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No overdue books found.", "Information",
-                    JOptionPane.INFORMATION_MESSAGE);
+        // Only show message if search was performed and no results found
+        if (overdueBooks != null && overdueBooks.isEmpty()) {
+            JOptionPane.showMessageDialog(null, 
+                "No overdue books found.", 
+                "Information",
+                JOptionPane.INFORMATION_MESSAGE);
         }
     }
 

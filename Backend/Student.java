@@ -10,27 +10,34 @@ public class Student {
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
-    static final String PASS = "";
+    static final String PASS = "Sanki@2004";
 
+    
     // Establish connection
     public static Connection connect() throws SQLException {
         return DriverManager.getConnection(DB_URL, USER, PASS);
     }
 
     public static int login(String username, String password) {
-        String sql = "SELECT id FROM student WHERE id = ? AND password = ?";
+        String sql = "SELECT id FROM student WHERE name = ? AND password = ? AND active = TRUE";
         try (Connection con = Database.connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setString(1, username);
             pst.setString(2, password);
             ResultSet rs = pst.executeQuery();
             if (rs.next()) {
-                return rs.getInt("id"); // Return the student ID
+                // Update login status
+                String updateSql = "UPDATE student SET login_status = TRUE WHERE id = ?";
+                try (PreparedStatement updatePst = con.prepareStatement(updateSql)) {
+                    updatePst.setInt(1, rs.getInt("id"));
+                    updatePst.executeUpdate();
+                }
+                return rs.getInt("id");
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return -1; // Return -1 if login fails
+        return -1;
     }
 
     public static void logout(String username, String password) {
@@ -467,7 +474,8 @@ public class Student {
     }
 
     public boolean requestNewBook(int studentId, String title, String author, String description) {
-        String sql = "INSERT INTO book_requests (student_id, title, author, description, request_date, status) VALUES (?, ?, ?, ?, ?, 'Pending')";
+        String sql = "INSERT INTO requests (student_id, title, author, description, status) " +
+                "VALUES (?, ?, ?, ?, 'pending')";
 
         try (Connection con = Database.connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
@@ -475,9 +483,8 @@ public class Student {
             pst.setString(2, title);
             pst.setString(3, author);
             pst.setString(4, description);
-            pst.setDate(5, java.sql.Date.valueOf(LocalDate.now())); // Current date
             int rowsAffected = pst.executeUpdate();
-            return rowsAffected > 0; // Return true if the request was successfully saved
+            return rowsAffected > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -588,5 +595,22 @@ public class Student {
             e.printStackTrace();
         }
         return false; // Default to inactive if not found or error occurs
+    }
+
+    public static boolean addStudent(String name, String email, String phone, String password) {
+        String sql = "INSERT INTO student (name, email, phone, password, active, login_status) " +
+                    "VALUES (?, ?, ?, ?, TRUE, FALSE)";
+        
+        try (Connection con = Database.connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setString(1, name);
+            pst.setString(2, email);
+            pst.setString(3, phone);
+            pst.setString(4, password);
+            return pst.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

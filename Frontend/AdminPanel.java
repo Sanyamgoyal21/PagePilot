@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.table.DefaultTableModel;
 
 public class AdminPanel {
     public static void displayAdminPage() {
@@ -35,7 +36,7 @@ public class AdminPanel {
         JButton manageLibrarianButton = new JButton("Add/View/Delete Librarian");
         JButton viewFineReportButton = new JButton("View Fine Report");
         JButton generateReportButton = new JButton("Generate Overall System Report");
-        JButton manageStudentButton = new JButton("Manage Student Account");
+        JButton manageStudentButton = new JButton("Manage User Account");
         JButton logoutButton = new JButton("Logout");
 
         // Add buttons to the navigation panel
@@ -62,137 +63,264 @@ public class AdminPanel {
         contentPanel.add(systemReportPanel, "SystemReport");
         contentPanel.add(studentPanel, "Student");
 
-        // Add action listeners to buttons
-        manageLibrarianButton.addActionListener(e -> {
-            cardLayout.show(contentPanel, "Librarian");
-            librarianPanel.removeAll(); // Clear the panel before adding new components
+        manageStudentButton.addActionListener(e -> {
+            cardLayout.show(contentPanel, "Student");
+            studentPanel.removeAll(); // Clear the panel before adding new components
+            studentPanel.setLayout(new BorderLayout());
 
-            // Create a split pane to divide the screen
-            JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-            splitPane.setDividerLocation(400); // Set initial divider position
+            // Table for displaying students
+            DefaultTableModel studentTableModel = new DefaultTableModel(
+                    new String[] { "Student ID", "Name", "Email", "Phone", "Active" }, 0);
+            JTable studentTable = new JTable(studentTableModel);
+            JScrollPane studentScrollPane = new JScrollPane(studentTable);
+            studentPanel.add(studentScrollPane, BorderLayout.CENTER);
 
-            // Left panel with CardLayout for options
-            JPanel leftPanel = new JPanel(new CardLayout());
-            JPanel optionsPanel = new JPanel(new GridLayout(3, 1, 10, 10)); // 3 buttons with spacing
-            JButton viewButton = new JButton("View Librarians");
-            JButton addButton = new JButton("Add Librarian");
-            JButton deleteButton = new JButton("Delete Librarian");
-            optionsPanel.add(viewButton);
-            optionsPanel.add(addButton);
-            optionsPanel.add(deleteButton);
+            // Search bar
+            JPanel searchPanel = new JPanel(new BorderLayout());
+            JTextField searchField = new JTextField();
+            JButton searchButton = new JButton("Search");
+            searchPanel.add(searchField, BorderLayout.CENTER);
+            searchPanel.add(searchButton, BorderLayout.EAST);
+            studentPanel.add(searchPanel, BorderLayout.NORTH);
 
-            // Add options panel to the left panel
-            leftPanel.add(optionsPanel, "Options");
+            // Buttons for Add, Delete, and Toggle Status
+            JPanel buttonPanel = new JPanel(new GridLayout(1, 3, 10, 10));
+            JButton addStudentButton = new JButton("Add Student");
+            JButton deleteStudentButton = new JButton("Delete Student");
+            JButton toggleStudentStatusButton = new JButton("Toggle Student Status");
+            buttonPanel.add(addStudentButton);
+            buttonPanel.add(deleteStudentButton);
+            buttonPanel.add(toggleStudentStatusButton);
+            studentPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-            // Add panel for adding a librarian
-            JPanel addLibrarianPanel = new JPanel(new GridLayout(4, 2, 10, 10));
-            addLibrarianPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-            JLabel nameLabel = new JLabel("Name:");
-            JTextField nameField = new JTextField(20);
-            JLabel passwordLabel = new JLabel("Password:");
-            JPasswordField passwordField = new JPasswordField(20);
-            JButton submitAddButton = new JButton("Submit");
-            addLibrarianPanel.add(nameLabel);
-            addLibrarianPanel.add(nameField);
-            addLibrarianPanel.add(passwordLabel);
-            addLibrarianPanel.add(passwordField);
-            addLibrarianPanel.add(new JLabel()); // Empty cell for spacing
-            addLibrarianPanel.add(submitAddButton);
-            leftPanel.add(addLibrarianPanel, "Add");
+            // Fetch and display all students
+            Admin localAdmin = new Admin();
+            try {
+                List<Object[]> students = localAdmin.getAllStudents();
+                studentTableModel.setRowCount(0); // Clear the table
+                for (Object[] student : students) {
+                    studentTableModel.addRow(student);
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(null, "Error fetching student data: " + ex.getMessage(), "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
 
-            // Add panel for deleting a librarian
-            JPanel deleteLibrarianPanel = new JPanel(new GridLayout(3, 2, 10, 10));
-            deleteLibrarianPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-            JLabel deleteIdLabel = new JLabel("ID:");
-            JTextField deleteIdField = new JTextField(20);
-            JButton submitDeleteButton = new JButton("Submit");
-            deleteLibrarianPanel.add(deleteIdLabel);
-            deleteLibrarianPanel.add(deleteIdField);
-            deleteLibrarianPanel.add(new JLabel()); // Empty cell for spacing
-            deleteLibrarianPanel.add(submitDeleteButton);
-            leftPanel.add(deleteLibrarianPanel, "Delete");
+            // Add functionality to the "Add Student" button
+            addStudentButton.addActionListener(addEvent -> {
+                JTextField nameField = new JTextField();
+                JTextField emailField = new JTextField();
+                JTextField phoneField = new JTextField();
+                JPasswordField passwordField = new JPasswordField();
 
-            // Right panel for displaying current librarians
-            JPanel viewLibrariansPanel = new JPanel(new BorderLayout());
-            JTextArea librarianListArea = new JTextArea();
-            librarianListArea.setEditable(false);
-            JScrollPane scrollPane = new JScrollPane(librarianListArea);
-            viewLibrariansPanel.add(scrollPane, BorderLayout.CENTER);
+                JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10));
+                panel.add(new JLabel("Name:"));
+                panel.add(nameField);
+                panel.add(new JLabel("Email:"));
+                panel.add(emailField);
+                panel.add(new JLabel("Phone:"));
+                panel.add(phoneField);
+                panel.add(new JLabel("Password:"));
+                panel.add(passwordField);
 
-            // Add panels to the split pane
-            splitPane.setLeftComponent(leftPanel);
-            splitPane.setRightComponent(viewLibrariansPanel);
+                int result = JOptionPane.showConfirmDialog(null, panel, "Add Student", JOptionPane.OK_CANCEL_OPTION);
+                if (result == JOptionPane.OK_OPTION) {
+                    String name = nameField.getText().trim();
+                    String email = emailField.getText().trim();
+                    String phone = phoneField.getText().trim();
+                    String password = new String(passwordField.getPassword()).trim();
 
-            // Add the split pane to the librarian panel
-            librarianPanel.setLayout(new BorderLayout());
-            librarianPanel.add(splitPane, BorderLayout.CENTER);
-
-            // CardLayout for switching between options
-            CardLayout leftCardLayout = (CardLayout) leftPanel.getLayout();
-
-            // Add functionality to the "View Librarians" button
-            viewButton.addActionListener(viewEvent -> {
-                leftCardLayout.show(leftPanel, "Options");
-                librarianListArea.setText("Current Librarians:\n");
-                librarianListArea.append("ID\tName\tPassword\n");
-                librarianListArea.append("---------------------------------\n");
-
-                Admin admin = new Admin();
-                try {
-                    String librarianData = admin.readLibrarian(); // Fetch librarian data
-                    librarianListArea.append(librarianData); // Display the data in the text area
-                } catch (Exception ex) {
-                    librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
+                    if (name.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "All fields are required!", "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    Admin admin = new Admin();
+                    try {
+                        boolean success = admin.insertStudent(name, email, phone, password);
+                        if (success) {
+                            JOptionPane.showMessageDialog(null, "Student added successfully!", "Success",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            // Refresh the table
+                            List<Object[]> students = admin.getAllStudents();
+                            studentTableModel.setRowCount(0);
+                            for (Object[] student : students) {
+                                studentTableModel.addRow(student);
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Failed to add student.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(null, "Error adding student: " + ex.getMessage(), "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             });
 
-            // Add functionality to the "Add Librarian" button
-            addButton.addActionListener(addEvent -> {
-                leftCardLayout.show(leftPanel, "Add"); // Show the Add Librarian form
-                librarianListArea.setText("Current Librarians:\n");
-                librarianListArea.append("ID\tName\tPassword\n");
-                librarianListArea.append("---------------------------------\n");
-                Admin admin = new Admin();
-                try {
-                    String librarianData = admin.readLibrarian(); // Fetch librarian data
-                    librarianListArea.append(librarianData); // Display the data in the text area
-                } catch (Exception ex) {
-                    librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
-                }
-            });
-
-            submitAddButton.addActionListener(submitAddEvent -> {
-                String name = nameField.getText().trim();
-                String password = new String(passwordField.getPassword()).trim();
-
-                if (name.isEmpty() || password.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
+            // Add functionality to the "Delete Student" button
+            deleteStudentButton.addActionListener(deleteEvent -> {
+                int selectedRow = studentTable.getSelectedRow();
+                if (selectedRow == -1) {
+                    JOptionPane.showMessageDialog(null, "Please select a student to delete.", "No Selection",
+                            JOptionPane.WARNING_MESSAGE);
                     return;
                 }
 
-                try {
-                    Admin admin = new Admin();
-                    admin.insertLibrarian(name, password); // Add librarian to the database
-                    JOptionPane.showMessageDialog(null, "Librarian added successfully!"); // Show success message
+                int studentId = (int) studentTableModel.getValueAt(selectedRow, 0);
 
-                    // Refresh the librarian list
-                    librarianListArea.setText("Current Librarians:\n");
-                    librarianListArea.append("ID\tName\tPassword\n");
-                    librarianListArea.append("---------------------------------\n");
+                int confirm = JOptionPane.showConfirmDialog(null,
+                        "Are you sure you want to delete this student?", "Confirm Delete",
+                        JOptionPane.YES_NO_OPTION);
+                Admin admin = new Admin();
+                if (confirm == JOptionPane.YES_OPTION) {
                     try {
-                        String librarianData = admin.readLibrarian(); // Fetch librarian data
-                        librarianListArea.append(librarianData); // Display the data in the text area
+                        boolean success = admin.deleteStudent(studentId); // Assume this method exists in Admin.java
+                        if (success) {
+                            JOptionPane.showMessageDialog(null, "Student deleted successfully!", "Success",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            // Refresh the table
+                            List<Object[]> students = admin.getAllStudents();
+                            studentTableModel.setRowCount(0);
+                            for (Object[] student : students) {
+                                studentTableModel.addRow(student);
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Failed to delete student.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
                     } catch (Exception ex) {
-                        JOptionPane.showMessageDialog(null, "Error adding librarian: " + ex.getMessage(), "Error",
+                        JOptionPane.showMessageDialog(null, "Error deleting student: " + ex.getMessage(), "Error",
                                 JOptionPane.ERROR_MESSAGE);
                     }
-                } catch (RuntimeException ex) {
-                    // Check if the exception message is about the password being in use
-                    if (ex.getMessage().contains("Password is already in use")) {
-                        JOptionPane.showMessageDialog(null,
-                                "Password is already in use. Please choose another password.", "Error",
+                }
+            });
+
+            // Add functionality to the "Toggle Student Status" button
+            toggleStudentStatusButton.addActionListener(toggleEvent -> {
+                int selectedRow = studentTable.getSelectedRow();
+                if (selectedRow == -1) {
+                    JOptionPane.showMessageDialog(null, "Please select a student to toggle status.", "No Selection",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                int studentId = (int) studentTableModel.getValueAt(selectedRow, 0);
+                boolean currentStatus = studentTableModel.getValueAt(selectedRow, 4).equals("Yes");
+
+                int confirm = JOptionPane.showConfirmDialog(null,
+                        "Are you sure you want to toggle the status of this student?", "Confirm Toggle",
+                        JOptionPane.YES_NO_OPTION);
+                if (confirm == JOptionPane.YES_OPTION) {
+                    try {
+                        Admin admin = new Admin();
+                        boolean success = admin.updateAccountStatus("student", studentId, !currentStatus);
+                        if (success) {
+                            JOptionPane.showMessageDialog(null, "Student status updated successfully!", "Success",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            // Refresh the table
+                            List<Object[]> students = admin.getAllStudents();
+                            studentTableModel.setRowCount(0);
+                            for (Object[] student : students) {
+                                studentTableModel.addRow(student);
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Failed to update student status.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(null, "Error updating student status: " + ex.getMessage(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            });
+
+            studentPanel.revalidate();
+            studentPanel.repaint();
+        });
+
+        // Similar functionality for "Manage Librarian Account"
+        manageLibrarianButton.addActionListener(e -> {
+            cardLayout.show(contentPanel, "Librarian");
+            librarianPanel.removeAll(); // Clear the panel before adding new components
+            librarianPanel.setLayout(new BorderLayout());
+
+            // Table for displaying librarians
+            DefaultTableModel librarianTableModel = new DefaultTableModel(
+                    new String[] { "Librarian ID", "Name", "Password", "Active" }, 0);
+            JTable librarianTable = new JTable(librarianTableModel);
+            JScrollPane librarianScrollPane = new JScrollPane(librarianTable);
+            librarianPanel.add(librarianScrollPane, BorderLayout.CENTER);
+
+            // Search bar
+            JPanel searchPanel = new JPanel(new BorderLayout());
+            JTextField searchField = new JTextField();
+            JButton searchButton = new JButton("Search");
+            searchPanel.add(searchField, BorderLayout.CENTER);
+            searchPanel.add(searchButton, BorderLayout.EAST);
+            librarianPanel.add(searchPanel, BorderLayout.NORTH);
+
+            // Buttons for Add, Delete, and Toggle Status
+            JPanel buttonPanel = new JPanel(new GridLayout(1, 3, 10, 10));
+            JButton addLibrarianButton = new JButton("Add Librarian");
+            JButton deleteLibrarianButton = new JButton("Delete Librarian");
+            JButton toggleLibrarianStatusButton = new JButton("Toggle Librarian Status");
+            buttonPanel.add(addLibrarianButton);
+            buttonPanel.add(deleteLibrarianButton);
+            buttonPanel.add(toggleLibrarianStatusButton);
+            librarianPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+            // Fetch and display all librarians
+            Admin admin = new Admin();
+            try {
+                List<Object[]> librarians = admin.getAllLibrarians();
+                librarianTableModel.setRowCount(0); // Clear the table
+                for (Object[] librarian : librarians) {
+                    librarianTableModel.addRow(librarian);
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(null, "Error fetching librarian data: " + ex.getMessage(), "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+
+            // Add functionality to the "Add Librarian" button
+            addLibrarianButton.addActionListener(addEvent -> {
+                JTextField nameField = new JTextField();
+                JPasswordField passwordField = new JPasswordField();
+
+                JPanel panel = new JPanel(new GridLayout(2, 2, 10, 10));
+                panel.add(new JLabel("Name:"));
+                panel.add(nameField);
+                panel.add(new JLabel("Password:"));
+                panel.add(passwordField);
+
+                int result = JOptionPane.showConfirmDialog(null, panel, "Add Librarian", JOptionPane.OK_CANCEL_OPTION);
+                if (result == JOptionPane.OK_OPTION) {
+                    String name = nameField.getText().trim();
+                    String password = new String(passwordField.getPassword()).trim();
+
+                    if (name.isEmpty() || password.isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "All fields are required!", "Error",
                                 JOptionPane.ERROR_MESSAGE);
-                    } else {
+                        return;
+                    }
+
+                    try {
+                        boolean success = admin.insertLibrarian(name, password);
+                        if (success) {
+                            JOptionPane.showMessageDialog(null, "Librarian added successfully!", "Success",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            // Refresh the table
+                            List<Object[]> librarians = admin.getAllLibrarians();
+                            librarianTableModel.setRowCount(0);
+                            for (Object[] librarian : librarians) {
+                                librarianTableModel.addRow(librarian);
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Failed to add librarian.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
                         JOptionPane.showMessageDialog(null, "Error adding librarian: " + ex.getMessage(), "Error",
                                 JOptionPane.ERROR_MESSAGE);
                     }
@@ -200,53 +328,80 @@ public class AdminPanel {
             });
 
             // Add functionality to the "Delete Librarian" button
-            deleteButton.addActionListener(deleteEvent -> {
-                leftCardLayout.show(leftPanel, "Delete");
-                librarianListArea.setText("Current Librarians:\n");
-                librarianListArea.append("ID\tName\tPassword\n");
-                librarianListArea.append("---------------------------------\n");
-                Admin admin = new Admin();
-                try {
-                    String librarianData = admin.readLibrarian(); // Fetch librarian data
-                    librarianListArea.append(librarianData); // Display the data in the text area
-                } catch (Exception ex) {
-                    librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
-                }
-            });
-
-            submitDeleteButton.addActionListener(submitDeleteEvent -> {
-                String idStr = deleteIdField.getText().trim();
-                if (idStr.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "ID is required to delete a librarian!", "Error",
-                            JOptionPane.ERROR_MESSAGE);
+            deleteLibrarianButton.addActionListener(deleteEvent -> {
+                int selectedRow = librarianTable.getSelectedRow();
+                if (selectedRow == -1) {
+                    JOptionPane.showMessageDialog(null, "Please select a librarian to delete.", "No Selection",
+                            JOptionPane.WARNING_MESSAGE);
                     return;
                 }
 
-                try {
-                    int id = Integer.parseInt(idStr);
-                    Admin admin = new Admin();
-                    boolean isDeleted = admin.deleteLibrarian(id);
+                int librarianId = (int) librarianTableModel.getValueAt(selectedRow, 0);
 
-                    if (isDeleted) {
-                        JOptionPane.showMessageDialog(null, "Librarian deleted successfully!");
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Librarian with ID " + id + " does not exist.", "Error",
+                int confirm = JOptionPane.showConfirmDialog(null,
+                        "Are you sure you want to delete this librarian?", "Confirm Delete",
+                        JOptionPane.YES_NO_OPTION);
+                if (confirm == JOptionPane.YES_OPTION) {
+                    try {
+                        boolean success = admin.deleteLibrarian(librarianId); // Assume this method exists in Admin.java
+                        if (success) {
+                            JOptionPane.showMessageDialog(null, "Librarian deleted successfully!", "Success",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            // Refresh the table
+                            List<Object[]> librarians = admin.getAllLibrarians();
+                            librarianTableModel.setRowCount(0);
+                            for (Object[] librarian : librarians) {
+                                librarianTableModel.addRow(librarian);
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Failed to delete librarian.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(null, "Error deleting librarian: " + ex.getMessage(), "Error",
                                 JOptionPane.ERROR_MESSAGE);
                     }
+                }
+            });
 
-                    // Refresh the librarian list
-                    librarianListArea.setText("Current Librarians:\n");
-                    librarianListArea.append("ID\tName\tPassword\n");
-                    librarianListArea.append("---------------------------------\n");
+            // Add functionality to the "Toggle Librarian Status" button
+            toggleLibrarianStatusButton.addActionListener(toggleEvent -> {
+                int selectedRow = librarianTable.getSelectedRow();
+                if (selectedRow == -1) {
+                    JOptionPane.showMessageDialog(null, "Please select a librarian to toggle status.", "No Selection",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                int librarianId = (int) librarianTableModel.getValueAt(selectedRow, 0);
+                boolean currentStatus = librarianTableModel.getValueAt(selectedRow, 3).equals("Yes");
+
+                int confirm = JOptionPane.showConfirmDialog(null,
+                        "Are you sure you want to toggle the status of this librarian?", "Confirm Toggle",
+                        JOptionPane.YES_NO_OPTION);
+                        
+                if (confirm == JOptionPane.YES_OPTION) {
+                    Admin admins = new Admin();
                     try {
-                        String librarianData = admin.readLibrarian(); // Fetch librarian data
-                        librarianListArea.append(librarianData); // Display the data in the text area
+                        
+                        boolean success = admin.updateAccountStatus("librarian", librarianId, !currentStatus);
+                        if (success) {
+                            JOptionPane.showMessageDialog(null, "Librarian status updated successfully!", "Success",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            // Refresh the table
+                            List<Object[]> librarians = admin.getAllLibrarians();
+                            librarianTableModel.setRowCount(0);
+                            for (Object[] librarian : librarians) {
+                                librarianTableModel.addRow(librarian);
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Failed to update librarian status.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
                     } catch (Exception ex) {
-                        librarianListArea.append("Error fetching librarian data: " + ex.getMessage());
+                        JOptionPane.showMessageDialog(null, "Error updating librarian status: " + ex.getMessage(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
                     }
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(null, "Invalid ID format. Please enter a number.", "Error",
-                            JOptionPane.ERROR_MESSAGE);
                 }
             });
 
@@ -259,53 +414,77 @@ public class AdminPanel {
             fineReportPanel.removeAll(); // Clear the panel before adding new components
             fineReportPanel.setLayout(new BorderLayout());
 
-            JTextArea fineReportArea = new JTextArea();
-            fineReportArea.setEditable(false);
-            JScrollPane scrollPane = new JScrollPane(fineReportArea);
-            fineReportPanel.add(scrollPane, BorderLayout.CENTER);
+            // Panel for Individual Fine Report
+            JPanel individualFinePanel = new JPanel(new BorderLayout());
+            DefaultTableModel individualFineTableModel = new DefaultTableModel(
+                    new String[] { "Issue ID", "Book ID", "Fine", "Issue Date", "Due Date", "Status" }, 0);
+            JTable individualFineTable = new JTable(individualFineTableModel);
+            JScrollPane individualFineScrollPane = new JScrollPane(individualFineTable);
+            individualFinePanel.add(new JLabel("Individual Fine Report", SwingConstants.CENTER), BorderLayout.NORTH);
+            individualFinePanel.add(individualFineScrollPane, BorderLayout.CENTER);
 
-            // Fetch and display fine details
-            Admin admin = new Admin();
-            fineReportArea.setText("=== Fine Report ===\n\n");
+            // Panel for Monthly Fine Report
+            JPanel monthlyFinePanel = new JPanel(new BorderLayout());
+            DefaultTableModel monthlyFineTableModel = new DefaultTableModel(
+                    new String[] { "Month", "Total Fine" }, 0);
+            JTable monthlyFineTable = new JTable(monthlyFineTableModel);
+            JScrollPane monthlyFineScrollPane = new JScrollPane(monthlyFineTable);
+            monthlyFinePanel.add(new JLabel("Monthly Fine Report", SwingConstants.CENTER), BorderLayout.NORTH);
+            monthlyFinePanel.add(monthlyFineScrollPane, BorderLayout.CENTER);
 
-            try {
-                // Fetch individual fine details
-                String sql = "SELECT issue_id, student_id, book_id, fine, MONTH(issue_date) AS month " +
-                        "FROM issued_books WHERE fine > 0";
-                try (Connection con = Admin.connect();
-                        Statement stmt = con.createStatement();
-                        ResultSet rs = stmt.executeQuery(sql)) {
-                    fineReportArea.append("Individual Fines:\n");
-                    fineReportArea.append("Issue ID\tStudent ID\tBook ID\tFine Amount\n");
-                    fineReportArea.append("-------------------------------------------------\n");
+            // Add both tables to the Fine Report panel
+            JPanel tablesPanel = new JPanel(new GridLayout(2, 1, 10, 10));
+            tablesPanel.add(individualFinePanel);
+            tablesPanel.add(monthlyFinePanel);
+            fineReportPanel.add(tablesPanel, BorderLayout.CENTER);
 
-                    while (rs.next()) {
-                        int issueId = rs.getInt("issue_id");
-                        int studentId = rs.getInt("student_id");
-                        int bookId = rs.getInt("book_id");
-                        double fine = rs.getDouble("fine");
+            // Panel for Buttons
+            JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 10));
+            JButton fetchIndividualFineButton = new JButton("Fetch Individual Fine");
+            JButton fetchMonthlyFineButton = new JButton("Fetch Monthly Fine");
+            buttonPanel.add(fetchIndividualFineButton);
+            buttonPanel.add(fetchMonthlyFineButton);
+            fineReportPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-                        fineReportArea.append(issueId + "\t" + studentId + "\t" + bookId + "\t" + fine + "\n");
+            // Add functionality to fetch individual fine report
+            fetchIndividualFineButton.addActionListener(fetchIndividualEvent -> {
+                String studentIdStr = JOptionPane.showInputDialog("Enter Student ID:");
+                if (studentIdStr == null || studentIdStr.trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Student ID is required!", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                try {
+                    int studentId = Integer.parseInt(studentIdStr.trim());
+                    Admin admin = new Admin();
+                    List<Object[]> individualFines = admin.getIndividualFineReport(studentId);
+
+                    individualFineTableModel.setRowCount(0); // Clear the table
+                    for (Object[] fine : individualFines) {
+                        individualFineTableModel.addRow(fine);
                     }
+
+                    if (individualFines.isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "No fines found for Student ID: " + studentId,
+                                "Information",
+                                JOptionPane.INFORMATION_MESSAGE);
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(null, "Invalid Student ID format!", "Error",
+                            JOptionPane.ERROR_MESSAGE);
                 }
+            });
 
-                // Fetch monthly fines
-                List<Double> monthlyFines = admin.viewMonthlyFines();
-                fineReportArea.append("\nMonthly Fines:\n");
-                fineReportArea.append("Month\tTotal Fine Amount\n");
-                fineReportArea.append("----------------------------\n");
+            // Add functionality to fetch monthly fine report
+            fetchMonthlyFineButton.addActionListener(fetchMonthlyEvent -> {
+                Admin admin = new Admin();
+                List<Double> monthlyFines = admin.getMonthlyFineReport();
 
+                monthlyFineTableModel.setRowCount(0); // Clear the table
                 for (int i = 0; i < monthlyFines.size(); i++) {
-                    fineReportArea.append((i + 1) + "\t" + monthlyFines.get(i) + "\n");
+                    monthlyFineTableModel.addRow(new Object[] { getMonthName(i + 1), monthlyFines.get(i) });
                 }
-
-                // Calculate overall total fine
-                double totalFine = monthlyFines.stream().mapToDouble(Double::doubleValue).sum();
-                fineReportArea.append("\nOverall Total Fine: Rs. " + totalFine);
-
-            } catch (SQLException ex) {
-                fineReportArea.append("Error fetching fine data: " + ex.getMessage());
-            }
+            });
 
             fineReportPanel.revalidate();
             fineReportPanel.repaint();
@@ -316,131 +495,92 @@ public class AdminPanel {
             systemReportPanel.removeAll(); // Clear the panel before adding new components
             systemReportPanel.setLayout(new BorderLayout());
 
-            JTextArea reportArea = new JTextArea();
-            reportArea.setEditable(false); // Make the text area read-only
-            JScrollPane scrollPane = new JScrollPane(reportArea);
-            systemReportPanel.add(scrollPane, BorderLayout.CENTER);
+            // Panel for Tables
+            JPanel tablesPanel = new JPanel(new GridLayout(3, 1, 10, 10));
 
-            // Fetch and display the system report
+            // Book Table
+            DefaultTableModel bookTableModel = new DefaultTableModel(
+                    new String[] { "Book ID", "Title", "Author", "Total Copies", "Available Copies" }, 0);
+            JTable bookTable = new JTable(bookTableModel);
+            JScrollPane bookScrollPane = new JScrollPane(bookTable);
+            JPanel bookPanel = new JPanel(new BorderLayout());
+            bookPanel.add(new JLabel("Books", SwingConstants.CENTER), BorderLayout.NORTH);
+            bookPanel.add(bookScrollPane, BorderLayout.CENTER);
+            tablesPanel.add(bookPanel);
+
+            // Librarian Table
+            DefaultTableModel librarianTableModel = new DefaultTableModel(
+                    new String[] { "Librarian ID", "Name", "Password" }, 0);
+            JTable librarianTable = new JTable(librarianTableModel);
+            JScrollPane librarianScrollPane = new JScrollPane(librarianTable);
+            JPanel librarianPanels = new JPanel(new BorderLayout());
+            librarianPanels.add(new JLabel("Librarians", SwingConstants.CENTER), BorderLayout.NORTH);
+            librarianPanels.add(librarianScrollPane, BorderLayout.CENTER);
+            tablesPanel.add(librarianPanels);
+
+            // Student Table
+            DefaultTableModel studentTableModel = new DefaultTableModel(
+                    new String[] { "Student ID", "Name", "Email", "Phone", "Active" }, 0);
+            JTable studentTable = new JTable(studentTableModel);
+            JScrollPane studentScrollPane = new JScrollPane(studentTable);
+            JPanel studentPanels = new JPanel(new BorderLayout());
+            studentPanels.add(new JLabel("Students", SwingConstants.CENTER), BorderLayout.NORTH);
+            studentPanels.add(studentScrollPane, BorderLayout.CENTER);
+            tablesPanel.add(studentPanels);
+
+            systemReportPanel.add(tablesPanel, BorderLayout.CENTER);
+
+            // Summary Panel
+            JPanel summaryPanel = new JPanel(new GridLayout(5, 1, 10, 10));
+            JLabel totalStudentsLabel = new JLabel("Total Students: ");
+            JLabel totalLibrariansLabel = new JLabel("Total Librarians: ");
+            JLabel totalBooksLabel = new JLabel("Total Books: ");
+            JLabel totalIssuedBooksLabel = new JLabel("Total Issued Books: ");
+            JLabel totalFinesLabel = new JLabel("Total Fines Collected: ");
+            summaryPanel.add(totalStudentsLabel);
+            summaryPanel.add(totalLibrariansLabel);
+            summaryPanel.add(totalBooksLabel);
+            summaryPanel.add(totalIssuedBooksLabel);
+            summaryPanel.add(totalFinesLabel);
+            systemReportPanel.add(summaryPanel, BorderLayout.SOUTH);
+
+            // Fetch Data and Populate Tables and Summary
             Admin admin = new Admin();
-            reportArea.setText("=== SYSTEM REPORT ===\n\n");
             try {
-                // Redirect the output of generateSystemReport() to the JTextArea
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                PrintStream ps = new PrintStream(baos);
-                PrintStream originalOut = System.out; // Save the original System.out
-                System.setOut(ps); // Redirect System.out to the PrintStream
+                // Populate Book Table
+                List<Object[]> books = admin.getAllBooks();
+                bookTableModel.setRowCount(0); // Clear the table
+                for (Object[] book : books) {
+                    bookTableModel.addRow(book);
+                }
 
-                // Call the generateSystemReport() method
-                admin.generateSystemReport();
+                // Populate Librarian Table
+                List<Object[]> librarians = admin.getAllLibrarians();
+                librarianTableModel.setRowCount(0); // Clear the table
+                for (Object[] librarian : librarians) {
+                    librarianTableModel.addRow(librarian);
+                }
 
-                // Restore the original System.out
-                System.out.flush();
-                System.setOut(originalOut);
+                // Populate Student Table
+                List<Object[]> students = admin.getAllStudents();
+                studentTableModel.setRowCount(0); // Clear the table
+                for (Object[] student : students) {
+                    studentTableModel.addRow(student);
+                }
 
-                // Append the generated report to the JTextArea
-                reportArea.append(baos.toString());
+                // Populate Summary
+                totalStudentsLabel.setText("Total Students: " + admin.getTotalStudents());
+                totalLibrariansLabel.setText("Total Librarians: " + admin.getTotalLibrarians());
+                totalBooksLabel.setText("Total Books: " + admin.getTotalBooks());
+                totalIssuedBooksLabel.setText("Total Issued Books: " + admin.getTotalIssuedBooks());
+                totalFinesLabel.setText("Total Fines Collected: " + admin.getTotalFinesCollected());
             } catch (Exception ex) {
-                reportArea.append("Error generating system report: " + ex.getMessage());
+                JOptionPane.showMessageDialog(null, "Error generating report: " + ex.getMessage(), "Error",
+                        JOptionPane.ERROR_MESSAGE);
             }
 
             systemReportPanel.revalidate();
             systemReportPanel.repaint();
-        });
-
-        manageStudentButton.addActionListener(e -> {
-            cardLayout.show(contentPanel, "Student");
-            studentPanel.removeAll(); // Clear the panel before adding new components
-            studentPanel.setLayout(new BorderLayout());
-        
-            // Create buttons for Student and Librarian
-            JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 10));
-            JButton studentButton = new JButton("Manage Students");
-            JButton librarianButton = new JButton("Manage Librarians");
-            buttonPanel.add(studentButton);
-            buttonPanel.add(librarianButton);
-        
-            // Create a text area to display details
-            JTextArea detailsArea = new JTextArea();
-            detailsArea.setEditable(false);
-            JScrollPane scrollPane = new JScrollPane(detailsArea);
-        
-            // Add components to the student panel
-            studentPanel.add(buttonPanel, BorderLayout.NORTH);
-            studentPanel.add(scrollPane, BorderLayout.CENTER);
-        
-            // Add functionality to the "Student" button
-            studentButton.addActionListener(studentEvent -> {
-                String idStr = JOptionPane.showInputDialog("Enter Student ID (Leave blank to view all):");
-                Integer id = null;
-                if (idStr != null && !idStr.trim().isEmpty()) {
-                    try {
-                        id = Integer.parseInt(idStr.trim());
-                    } catch (NumberFormatException ex) {
-                        JOptionPane.showMessageDialog(null, "Invalid ID format. Please enter a number.", "Error",
-                                JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                }
-        
-                Admin admin = new Admin();
-                String studentDetails = admin.getStudentDetails(id);
-                detailsArea.setText("=== Student Details ===\n\n" + studentDetails);
-        
-                // Option to toggle account status
-                if (id != null) {
-                    int choice = JOptionPane.showConfirmDialog(null, "Do you want to toggle the active status of this account?",
-                            "Toggle Account Status", JOptionPane.YES_NO_OPTION);
-                    if (choice == JOptionPane.YES_OPTION) {
-                        boolean currentStatus = studentDetails.contains("Active: Yes");
-                        boolean success = admin.updateAccountStatus("student", id, !currentStatus);
-                        if (success) {
-                            JOptionPane.showMessageDialog(null, "Account status updated successfully!");
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Failed to update account status.", "Error",
-                                    JOptionPane.ERROR_MESSAGE);
-                        }
-                    }
-                }
-            });
-        
-            // Add functionality to the "Librarian" button
-            librarianButton.addActionListener(librarianEvent -> {
-                String idStr = JOptionPane.showInputDialog("Enter Librarian ID (Leave blank to view all):");
-                Integer id = null;
-                if (idStr != null && !idStr.trim().isEmpty()) {
-                    try {
-                        id = Integer.parseInt(idStr.trim());
-                    } catch (NumberFormatException ex) {
-                        JOptionPane.showMessageDialog(null, "Invalid ID format. Please enter a number.", "Error",
-                                JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                }
-        
-                Admin admin = new Admin();
-                String librarianDetails = admin.getLibrarianDetails(id);
-                detailsArea.setText("=== Librarian Details ===\n\n" + librarianDetails);
-        
-                // Option to toggle account status
-                if (id != null) {
-                    int choice = JOptionPane.showConfirmDialog(null, "Do you want to toggle the active status of this account?",
-                            "Toggle Account Status", JOptionPane.YES_NO_OPTION);
-                    if (choice == JOptionPane.YES_OPTION) {
-                        boolean currentStatus = librarianDetails.contains("Active: Yes");
-                        boolean success = admin.updateAccountStatus("librarian", id, !currentStatus);
-                        if (success) {
-                            JOptionPane.showMessageDialog(null, "Account status updated successfully!");
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Failed to update account status.", "Error",
-                                    JOptionPane.ERROR_MESSAGE);
-                        }
-                    }
-                }
-            });
-        
-            studentPanel.revalidate();
-            studentPanel.repaint();
         });
 
         logoutButton.addActionListener(e -> adminFrame.dispose()); // Close the admin dashboard
@@ -461,6 +601,25 @@ public class AdminPanel {
         label.setFont(new Font("Arial", Font.BOLD, 18));
         panel.add(label, BorderLayout.CENTER);
         return panel;
+    }
+
+    private static void refreshLibrarianTable(DefaultTableModel tableModel) {
+        tableModel.setRowCount(0); // Clear the table
+        Admin admin = new Admin();
+        try {
+            List<Object[]> librarians = admin.getAllLibrarians();
+            for (Object[] librarian : librarians) {
+                tableModel.addRow(librarian);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(null, "Error fetching librarian data: " + ex.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Helper method to get month name
+    private static String getMonthName(int month) {
+        return new java.text.DateFormatSymbols().getMonths()[month - 1];
     }
 
     public static void main(String[] args) {

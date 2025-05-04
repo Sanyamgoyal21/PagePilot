@@ -29,6 +29,33 @@ public class Database {
         }
     }
 
+    public ResultSet viewStudents(String searchBy, String value) {
+        String sql = "SELECT s.id AS student_id, s.name, s.email, s.phone, s.active, " +
+                "IFNULL(SUM(ib.fine), 0) AS total_fine " +
+                "FROM student s " +
+                "LEFT JOIN issued_books ib ON s.id = ib.student_id";
+
+        if (searchBy != null && value != null) {
+            sql += " WHERE s." + searchBy + " = ?";
+        }
+
+        sql += " GROUP BY s.id";
+
+        try {
+            Connection con = Database.connect();
+            PreparedStatement pst = con.prepareStatement(sql);
+
+            if (searchBy != null && value != null) {
+                pst.setString(1, value);
+            }
+
+            return pst.executeQuery();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     // Main method to create the database and tables
     public static void main(String[] args) {
         try {
@@ -63,8 +90,10 @@ public class Database {
 
                 String createTableStudent = "CREATE TABLE IF NOT EXISTS student (" +
                         "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
-                        "name VARCHAR(100)," +
-                        "password VARCHAR(50)," +
+                        "name VARCHAR(100) NOT NULL," +
+                        "email VARCHAR(100) NOT NULL," +
+                        "phone VARCHAR(15) NOT NULL," +
+                        "password VARCHAR(50) NOT NULL," +
                         "login_status BOOLEAN DEFAULT FALSE," +
                         "active BOOLEAN DEFAULT TRUE" +
                         ");";
@@ -103,13 +132,43 @@ public class Database {
                 queryExecute(conn, createTableNotification);
 
                 String createTableRequests = "CREATE TABLE IF NOT EXISTS requests (" +
-                        "request_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
+                        "id INT AUTO_INCREMENT PRIMARY KEY," +
                         "student_id INT NOT NULL," +
-                        "request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-                        "status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending'," +
-                        "notes TEXT" +
+                        "type ENUM('New Book', 'Hold Book') NOT NULL," +
+                        "book_title VARCHAR(255)," +
+                        "author VARCHAR(255)," +
+                        "reason TEXT," +
+                        "request_date DATE NOT NULL," +
+                        "status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending'," +
+                        "FOREIGN KEY (student_id) REFERENCES student(id)" +
                         ");";
                 queryExecute(conn, createTableRequests);
+
+                String createTableBookRequests = "CREATE TABLE IF NOT EXISTS book_requests (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY," +
+                        "student_id INT NOT NULL," +
+                        "title VARCHAR(255) NOT NULL," +
+                        "author VARCHAR(255) NOT NULL," +
+                        "description TEXT," +
+                        "request_date DATE NOT NULL," +
+                        "FOREIGN KEY (student_id) REFERENCES student(id)" +
+                        ");";
+                queryExecute(conn, createTableBookRequests);
+
+                String createTableHoldRequests = "CREATE TABLE IF NOT EXISTS hold_requests (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY," +
+                        "student_id INT NOT NULL," +
+                        "book_id INT NOT NULL," +
+                        "book_name VARCHAR(255) NOT NULL," +
+                        "author_name VARCHAR(255) NOT NULL," +
+                        "reason TEXT NOT NULL," +
+                        "hold_date DATE NOT NULL," +
+                        "expired_date DATE NOT NULL," +
+                        "status ENUM('Pending', 'Expired') DEFAULT 'Pending'," +
+                        "FOREIGN KEY (student_id) REFERENCES student(id)," +
+                        "FOREIGN KEY (book_id) REFERENCES books(id)" +
+                        ");";
+                queryExecute(conn, createTableHoldRequests);
 
                 System.out.println("✅ Database and all tables created successfully.");
             }

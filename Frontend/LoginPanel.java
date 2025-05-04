@@ -1,7 +1,9 @@
 package Frontend;
+
 import Backend.Student;
 import Backend.Librarian;
 import Backend.Admin;
+
 import javax.swing.*;
 import java.awt.event.*;
 import java.awt.*;
@@ -9,16 +11,17 @@ import java.awt.*;
 public class LoginPanel {
     private static void placeComponents(JPanel panel) {
         panel.setLayout(null);
+
         JLabel userLabel = new JLabel("User");
         JLabel passwordLabel = new JLabel("Password");
         JLabel roleLabel = new JLabel("Role");
-        JTextField userText = new JTextField(20);wq
+        JTextField userText = new JTextField(20);
         JPasswordField passwordText = new JPasswordField(20);
         JButton loginButton = new JButton("Login");
-        JLabel successLabel = new JLabel(""); 
-        
+        JLabel successLabel = new JLabel("");
+
         // Create the dropdown/combobox
-        String[] userTypes = {"Student", "Librarian", "Admin"};
+        String[] userTypes = { "Student", "Librarian", "Admin" };
         JComboBox<String> roleComboBox = new JComboBox<>(userTypes);
 
         // Set bounds for all components
@@ -41,31 +44,50 @@ public class LoginPanel {
         panel.add(loginButton);
         panel.add(successLabel);
 
+        // Add action listener for the Login button
         loginButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String username = userText.getText();
                 String password = new String(passwordText.getPassword());
                 String selectedRole = (String) roleComboBox.getSelectedItem();
-                
+
                 boolean loginSuccess = false;
-                switch(selectedRole) {
+
+                switch (selectedRole) {
                     case "Student":
-                        loginSuccess = Student.login(username, password);
+                        int studentId = Student.login(username, password); // Return student ID on successful login
+                        if (studentId != -1) {
+                            if (Student.isActive(studentId)) { // Check if the student is active
+                                loginSuccess = true;
+                                successLabel.setText("Login successful as Student!");
+                                StudentPanel.displayStudentPage(studentId); // Pass the student ID to StudentPanel
+                            } else {
+                                successLabel.setText("Access denied. Student account is inactive.");
+                            }
+                        }
                         break;
+
                     case "Librarian":
-                        //loginSuccess = Librarian.login(username, password);
+                        if (Librarian.login(username, password)) {
+                            if (Librarian.isActive(username)) { // Check if the librarian is active
+                                loginSuccess = true;
+                                successLabel.setText("Login successful as Librarian!");
+                                LibrarianPanel.displayLibrarianPage(); // Redirect to LibrarianPanel
+                            } else {
+                                successLabel.setText("Access denied. Librarian account is inactive.");
+                            }
+                        }
                         break;
+
                     case "Admin":
-                        // Add Admin login logic here
+                        if (Admin.login(username, password)) {
+                                loginSuccess = true;
+                                successLabel.setText("Login successful as Admin!");
+                                AdminPanel.displayAdminPage(); // Redirect to AdminPanel
+                            }
                         break;
                 }
-                
-                if(loginSuccess) {
-                    successLabel.setText("Login successful as " + selectedRole + "!");
-                    // Proceed to the next screen or functionality based on role
-                    // For example, you can open a new JFrame or redirect to another panel
-
-                } else {
+                if (!loginSuccess && successLabel.getText().isEmpty()) {
                     successLabel.setText("Invalid username or password.");
                 }
             }

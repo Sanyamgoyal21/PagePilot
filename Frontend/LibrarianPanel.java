@@ -26,14 +26,26 @@ public class LibrarianPanel {
         navigationPanel.setPreferredSize(new Dimension(200, 0)); // Fixed width for navigation
 
         // Buttons for navigation
-        JButton addViewDeleteBooksButton = new JButton("Add/View/Delete Books");
-        JButton issueBooksButton = new JButton("Issue Books to Students");
-        JButton viewIssuedBooksButton = new JButton("View Issued Books");
-        JButton returnBooksButton = new JButton("Return Books and Calculate Fines");
-        JButton manageStudentRecordsButton = new JButton("Manage Student Records");
-        JButton requestApprovalButton = new JButton("Request Approval");
-        JButton viewOverdueBooksButton = new JButton("View Overdue Books and Notify Students");
-        JButton logoutButton = new JButton("Logout");
+        // JButton addViewDeleteBooksButton = new JButton("Add/View/Delete Books");
+        // JButton issueBooksButton = new JButton("Issue Book");
+        // JButton viewIssuedBooksButton = new JButton("View Issued Books");
+        // JButton returnBooksButton = new JButton("Return Books and Calculate Fines");
+        // JButton manageStudentRecordsButton = new JButton("Manage Student Records");
+        // JButton requestApprovalButton = new JButton("Request Approval");
+        // JButton viewOverdueBooksButton = new JButton("View Overdue Books and Notify Students");
+        // JButton logoutButton = new JButton("Logout");
+
+
+        JButton addViewDeleteBooksButton = new JButton("Manage Books"); // Add/View/Delete Books
+        JButton issueBooksButton = new JButton("Issue Book");
+        JButton viewIssuedBooksButton = new JButton("Issued Books");
+        JButton returnBooksButton = new JButton("Return Book & Fines");
+        JButton manageStudentRecordsButton = new JButton("Student Records");
+        JButton requestApprovalButton = new JButton("Approval Requests");
+        JButton viewOverdueBooksButton = new JButton("Overdue Books & Notifications");
+        JButton logoutButton = new JButton("Log Out");
+
+
 
         // Add buttons to the navigation panel
         navigationPanel.add(addViewDeleteBooksButton);
@@ -1086,12 +1098,12 @@ public class LibrarianPanel {
         }
 
         // Only show message if search was performed and no results found
-        if (overdueBooks != null && overdueBooks.isEmpty()) {
-            JOptionPane.showMessageDialog(null, 
-                "No overdue books found.", 
-                "Information",
-                JOptionPane.INFORMATION_MESSAGE);
-        }
+        // if (overdueBooks != null && overdueBooks.isEmpty()) {
+        //     JOptionPane.showMessageDialog(null, 
+        //         "No overdue books found.", 
+        //         "Information",
+        //         JOptionPane.INFORMATION_MESSAGE);
+        // }
     }
 
     private static void refreshStudentTable(DefaultTableModel tableModel, List<Object[]> studentData) {

@@ -33,11 +33,20 @@ public class AdminPanel {
         navigationPanel.setPreferredSize(new Dimension(200, 0)); // Fixed width for navigation
 
         // Buttons for navigation
-        JButton manageLibrarianButton = new JButton("Add/View/Delete Librarian");
-        JButton viewFineReportButton = new JButton("View Fine Report");
-        JButton generateReportButton = new JButton("Generate Overall System Report");
-        JButton manageStudentButton = new JButton("Manage User Account");
-        JButton logoutButton = new JButton("Logout");
+        // JButton manageLibrarianButton = new JButton("Add/View/Delete Librarian");
+        // JButton viewFineReportButton = new JButton("View Fine Report");
+        // JButton generateReportButton = new JButton("Generate Overall System Report");
+        // JButton manageStudentButton = new JButton("Manage User Account");
+        // JButton logoutButton = new JButton("Logout");
+
+
+        JButton manageLibrarianButton = new JButton("Manage Librarians"); // Add/View/Delete Librarian
+        JButton viewFineReportButton = new JButton("Fine Report");
+        JButton generateReportButton = new JButton("System Report");
+        JButton manageStudentButton = new JButton("Manage User Accounts");
+        JButton logoutButton = new JButton("Log Out");
+
+
 
         // Add buttons to the navigation panel
         navigationPanel.add(manageLibrarianButton);

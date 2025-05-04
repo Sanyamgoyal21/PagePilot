@@ -23,8 +23,16 @@ public class Librarian {
 
     // Add or Update Book
     public boolean addOrUpdateBook(String title, String author, int totalCopies, int availableCopies) {
+        if (availableCopies > totalCopies) {
+            JOptionPane.showMessageDialog(null, 
+                "Available copies cannot exceed total copies.", 
+                "Invalid Input", 
+                JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
         String checkSql = "SELECT * FROM books WHERE title = ? AND author = ?";
-        String updateSql = "UPDATE books SET total_copies = total_copies + ?, available_copies = available_copies + ? WHERE title = ? AND author = ?";
+        String updateSql = "UPDATE books SET total_copies = ?, available_copies = ? WHERE title = ? AND author = ?";
         String insertSql = "INSERT INTO books (title, author, total_copies, available_copies) VALUES (?, ?, ?, ?)";
 
         try (Connection con = connect();
@@ -39,12 +47,30 @@ public class Librarian {
 
             if (rs.next()) {
                 // Update existing book
-                updatePst.setInt(1, totalCopies);
-                updatePst.setInt(2, availableCopies);
+                int currentTotal = rs.getInt("total_copies");
+                int currentAvailable = rs.getInt("available_copies");
+                int newTotal = currentTotal + totalCopies;
+                int newAvailable = currentAvailable + availableCopies;
+
+                // Ensure available copies don't exceed total copies
+                if (newAvailable > newTotal) {
+                    newAvailable = newTotal;
+                }
+
+                updatePst.setInt(1, newTotal);
+                updatePst.setInt(2, newAvailable);
                 updatePst.setString(3, title);
                 updatePst.setString(4, author);
                 updatePst.executeUpdate();
-                return true; // Book updated
+
+                // Check if out of stock after update
+                if (newAvailable == 0) {
+                    JOptionPane.showMessageDialog(null,
+                        "Book '" + title + "' is now out of stock!",
+                        "Stock Alert",
+                        JOptionPane.WARNING_MESSAGE);
+                }
+                return true;
             } else {
                 // Insert new book
                 insertPst.setString(1, title);
@@ -52,12 +78,24 @@ public class Librarian {
                 insertPst.setInt(3, totalCopies);
                 insertPst.setInt(4, availableCopies);
                 insertPst.executeUpdate();
-                return true; // Book added
+
+                // Check if new book is out of stock
+                if (availableCopies == 0) {
+                    JOptionPane.showMessageDialog(null,
+                        "New book '" + title + "' is out of stock!",
+                        "Stock Alert",
+                        JOptionPane.WARNING_MESSAGE);
+                }
+                return true;
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            JOptionPane.showMessageDialog(null,
+                "Error adding/updating book: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
         }
-        return false; // Operation failed
+        return false;
     }
 
     // Add Student

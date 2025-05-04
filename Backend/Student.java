@@ -10,7 +10,7 @@ public class Student {
     static final String driverClassName = "com.mysql.cj.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://localhost:3306/pagepilot";
     static final String USER = "root";
-    static final String PASS = "Sanyam@123";
+    static final String PASS = "Sanki@2004";
 
     
     // Establish connection
@@ -641,5 +641,6 @@ public class Student {
             e.printStackTrace();
         }
         return false;
+
     }
 }

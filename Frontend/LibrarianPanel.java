@@ -26,16 +26,6 @@ public class LibrarianPanel {
         navigationPanel.setPreferredSize(new Dimension(200, 0)); // Fixed width for navigation
 
         // Buttons for navigation
-        // JButton addViewDeleteBooksButton = new JButton("Add/View/Delete Books");
-        // JButton issueBooksButton = new JButton("Issue Book");
-        // JButton viewIssuedBooksButton = new JButton("View Issued Books");
-        // JButton returnBooksButton = new JButton("Return Books and Calculate Fines");
-        // JButton manageStudentRecordsButton = new JButton("Manage Student Records");
-        // JButton requestApprovalButton = new JButton("Request Approval");
-        // JButton viewOverdueBooksButton = new JButton("View Overdue Books and Notify Students");
-        // JButton logoutButton = new JButton("Logout");
-
-
         JButton addViewDeleteBooksButton = new JButton("Manage Books"); // Add/View/Delete Books
         JButton issueBooksButton = new JButton("Issue Book");
         JButton viewIssuedBooksButton = new JButton("Issued Books");
@@ -44,8 +34,6 @@ public class LibrarianPanel {
         JButton requestApprovalButton = new JButton("Approval Requests");
         JButton viewOverdueBooksButton = new JButton("Overdue Books & Notifications");
         JButton logoutButton = new JButton("Log Out");
-
-
 
         // Add buttons to the navigation panel
         navigationPanel.add(addViewDeleteBooksButton);
@@ -584,10 +572,12 @@ public class LibrarianPanel {
         searchPanel.add(searchButton, BorderLayout.EAST);
         returnBooksPanel.add(searchPanel, BorderLayout.NORTH);
 
-        // Button to return the selected book
+        // Buttons for returning books and paying fines
         JButton returnBookButton = new JButton("Return Book");
+        JButton payFineButton = new JButton("Pay Fine"); // New button for paying fines
         JPanel buttonPanel = new JPanel();
         buttonPanel.add(returnBookButton);
+        buttonPanel.add(payFineButton); // Add the Pay Fine button
         returnBooksPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         // Add action listener for the Search button
@@ -659,6 +649,40 @@ public class LibrarianPanel {
                 refreshIssuedBooksTable(tableModel, null, null); // Refresh the table
             } else {
                 JOptionPane.showMessageDialog(null, "Failed to return the book.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Add action listener for the Pay Fine button
+        payFineButton.addActionListener(e -> {
+            int selectedRow = issuedBooksTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(null, "Please select a book to pay the fine.", "No Selection",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Get the selected book details
+            int issueId = (int) tableModel.getValueAt(selectedRow, 0);
+            int fine = (int) tableModel.getValueAt(selectedRow, 7);
+
+            // Confirm the fine payment
+            int confirm = JOptionPane.showConfirmDialog(null,
+                    "The fine for this book is ₹" + fine + ". Do you want to proceed with payment?", "Confirm Payment",
+                    JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) {
+                return;
+            }
+
+            // Waive the fine
+            Librarian librarian = new Librarian();
+            boolean success = librarian.waiveFine(issueId);
+            if (success) {
+                JOptionPane.showMessageDialog(null, "Fine paid successfully!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                refreshIssuedBooksTable(tableModel, null, null); // Refresh the table
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to pay the fine.", "Error",
                         JOptionPane.ERROR_MESSAGE);
             }
         });
@@ -861,23 +885,25 @@ public class LibrarianPanel {
 
         // Create table model with columns
         DefaultTableModel tableModel = new DefaultTableModel(
-            new String[] {
-                "Issue ID", "Book ID", "Title", "Author", 
-                "Student ID", "Issue Date", "Due Date", "Fine", "Status"  // Added Status column
-            }, 0
-        ) {
+                new String[] {
+                        "Issue ID", "Book ID", "Title", "Author",
+                        "Student ID", "Issue Date", "Due Date", "Fine", "Status" // Added Status column
+                }, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
-            
+
             // Override getColumnClass to properly format date columns
             @Override
             public Class<?> getColumnClass(int column) {
                 switch (column) {
-                    case 0, 1, 4, 7: return Integer.class;
-                    case 5, 6: return java.util.Date.class;
-                    default: return String.class;
+                    case 0, 1, 4, 7:
+                        return Integer.class;
+                    case 5, 6:
+                        return java.util.Date.class;
+                    default:
+                        return String.class;
                 }
             }
         };
@@ -888,11 +914,11 @@ public class LibrarianPanel {
 
         // Search panel
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        String[] searchOptions = {"student_id", "book_id", "title", "author"};
+        String[] searchOptions = { "student_id", "book_id", "title", "author" };
         JComboBox<String> searchByCombo = new JComboBox<>(searchOptions);
         JTextField searchField = new JTextField(20);
         JButton searchButton = new JButton("Search");
-        
+
         searchPanel.add(new JLabel("Search by:"));
         searchPanel.add(searchByCombo);
         searchPanel.add(searchField);
@@ -916,7 +942,7 @@ public class LibrarianPanel {
         searchButton.addActionListener(e -> {
             String searchType = (String) searchByCombo.getSelectedItem();
             String searchValue = searchField.getText().trim();
-            
+
             if (!searchValue.isEmpty()) {
                 Librarian librarian = new Librarian();
                 List<Object[]> results = librarian.viewOverdueBooks(searchType, searchValue);
@@ -928,51 +954,54 @@ public class LibrarianPanel {
 
         // Refresh button action
         refreshButton.addActionListener(e -> {
-            updateOverdueBooksAndFines();  // First update overdue status and fines
-            refreshOverdueBooksTable(tableModel, null);  // Then refresh display
+            updateOverdueBooksAndFines(); // First update overdue status and fines
+            refreshOverdueBooksTable(tableModel, null); // Then refresh display
         });
 
         // Update fines button action
         updateFineButton.addActionListener(e -> {
             updateOverdueBooksAndFines();
             refreshOverdueBooksTable(tableModel, null);
-            JOptionPane.showMessageDialog(null, 
-                "Fines have been updated for all overdue books.", 
-                "Fines Updated", 
-                JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(null,
+                    "Fines have been updated for all overdue books.",
+                    "Fines Updated",
+                    JOptionPane.INFORMATION_MESSAGE);
         });
 
         // Notify button action
         notifyButton.addActionListener(e -> {
             int selectedRow = overdueBooksTable.getSelectedRow();
             if (selectedRow == -1) {
-                JOptionPane.showMessageDialog(null, 
-                    "Please select a book to notify the student.", 
-                    "No Selection", 
-                    JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(null,
+                        "Please select a book to notify the student.",
+                        "No Selection",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            // Convert view index to model index if table is sorted
-            int modelRow = overdueBooksTable.convertRowIndexToModel(selectedRow);
-            
-            int studentId = (int) tableModel.getValueAt(modelRow, 4);
-            String bookTitle = (String) tableModel.getValueAt(modelRow, 2);
-            int fine = (int) tableModel.getValueAt(modelRow, 7);
-            java.util.Date dueDate = (java.util.Date) tableModel.getValueAt(modelRow, 6);
+            int studentId = (int) tableModel.getValueAt(selectedRow, 4);
+            String bookTitle = (String) tableModel.getValueAt(selectedRow, 2);
+            String message = JOptionPane.showInputDialog(
+                    null,
+                    "Enter the message to send to the student:",
+                    "Send Notification",
+                    JOptionPane.PLAIN_MESSAGE);
 
-            String message = String.format(
-                "Notification sent to Student ID: %d\n" +
-                "Book: %s\n" +
-                "Due Date: %s\n" +
-                "Fine Amount: ₹%d", 
-                studentId, bookTitle, dueDate.toString(), fine
-            );
-            
-            JOptionPane.showMessageDialog(null, 
-                message, 
-                "Notification Sent", 
-                JOptionPane.INFORMATION_MESSAGE);
+            if (message != null && !message.trim().isEmpty()) {
+                Librarian librarian = new Librarian();
+                boolean success = librarian.sendNotification(studentId, "Custom Notification", message);
+                if (success) {
+                    JOptionPane.showMessageDialog(null,
+                            "Notification sent successfully!",
+                            "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(null,
+                            "Failed to send notification.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
         });
 
         // Initial data load with fine update
@@ -993,9 +1022,9 @@ public class LibrarianPanel {
         } catch (SQLException ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(null,
-                "Error updating overdue books and fines: " + ex.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
+                    "Error updating overdue books and fines: " + ex.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -1082,27 +1111,27 @@ public class LibrarianPanel {
         if (overdueBooks == null) {
             overdueBooks = librarian.viewOverdueBooks(null, null);
         }
-        
+
         for (Object[] book : overdueBooks) {
-            tableModel.addRow(new Object[]{
-                book[0], // issue_id
-                book[1], // book_id
-                book[2], // title
-                book[3], // author 
-                book[4], // student_id
-                book[5], // issue_date
-                book[6], // due_date
-                book[7],  // fine
-                book[8]   // status
+            tableModel.addRow(new Object[] {
+                    book[0], // issue_id
+                    book[1], // book_id
+                    book[2], // title
+                    book[3], // author
+                    book[4], // student_id
+                    book[5], // issue_date
+                    book[6], // due_date
+                    book[7], // fine
+                    book[8] // status
             });
         }
 
         // Only show message if search was performed and no results found
         // if (overdueBooks != null && overdueBooks.isEmpty()) {
-        //     JOptionPane.showMessageDialog(null, 
-        //         "No overdue books found.", 
-        //         "Information",
-        //         JOptionPane.INFORMATION_MESSAGE);
+        // JOptionPane.showMessageDialog(null,
+        // "No overdue books found.",
+        // "Information",
+        // JOptionPane.INFORMATION_MESSAGE);
         // }
     }
 

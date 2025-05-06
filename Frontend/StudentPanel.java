@@ -21,17 +21,6 @@ public class StudentPanel {
         navigationPanel.setPreferredSize(new Dimension(200, 0)); // Fixed width for navigation
 
         // Buttons for navigation
-        // JButton borrowBooksButton = new JButton("Borrow Books");
-        // JButton returnBooksButton = new JButton("Return Books and Pay Fines");
-        // JButton viewBorrowingStatusButton = new JButton("View Borrowing Status");
-        // JButton requestNewBooksButton = new JButton("Request New Books");
-        // JButton requestHoldBooksButton = new JButton("Request Hold Books (1 Week)");
-        // JButton reissueBooksButton = new JButton("Reissue Borrowed Books");
-        // JButton viewNotificationsButton = new JButton("View Notifications (Due Dates, Fines, Approvals)");
-        // JButton logoutButton = new JButton("Logout");
-
-
-
         JButton borrowBooksButton = new JButton("Issue Books");
         JButton returnBooksButton = new JButton("Return Books & Pay Fines");
         JButton viewBorrowingStatusButton = new JButton("Borrowing Status");
@@ -40,8 +29,6 @@ public class StudentPanel {
         JButton reissueBooksButton = new JButton("Reissue Books");
         JButton viewNotificationsButton = new JButton("View Notifications");
         JButton logoutButton = new JButton("Log Out");
-
-
 
         // Add buttons to the navigation panel
         navigationPanel.add(borrowBooksButton);
@@ -69,7 +56,7 @@ public class StudentPanel {
         contentPanel.add(requestNewBooksPanel, "RequestNewBooks");
         JPanel requestHoldBooksPanel = createRequestHoldBooksPanel(studentId); // Pass the logged-in student's ID
         JPanel reissueBooksPanel = createReissueBooksPanel(studentId); // Pass the logged-in student's ID
-        JPanel viewNotificationsPanel = createFeaturePanel("View Notifications (Due Dates, Fines, Approvals)");
+        JPanel viewNotificationsPanel = createViewNotificationsPanel(studentId); // Pass the logged-in student's ID
 
         // Add feature panels to the content panel
         contentPanel.add(requestHoldBooksPanel, "RequestHoldBooks");
@@ -594,6 +581,30 @@ public class StudentPanel {
         return reissueBooksPanel;
     }
 
+    // Helper method to create the View Notifications panel
+    private static JPanel createViewNotificationsPanel(int studentId) {
+        JPanel notificationPanel = new JPanel(new BorderLayout());
+
+        // Table for displaying notifications
+        DefaultTableModel tableModel = new DefaultTableModel(
+                new String[] { "Title", "Message", "Date" }, 0);
+        JTable notificationTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(notificationTable);
+        notificationPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Refresh button
+        JButton refreshButton = new JButton("Refresh");
+        refreshButton.addActionListener(e -> refreshNotificationsTable(tableModel, studentId));
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(refreshButton);
+        notificationPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Load notifications initially
+        refreshNotificationsTable(tableModel, studentId);
+
+        return notificationPanel;
+    }
+
     // Helper method to refresh the books table
     private static void refreshBooksTable(DefaultTableModel tableModel, List<Object[]> books) {
         tableModel.setRowCount(0); // Clear the table
@@ -609,7 +620,8 @@ public class StudentPanel {
         }
 
         // if (books.isEmpty()) {
-        //     JOptionPane.showMessageDialog(null, "No books found.", "Information", JOptionPane.INFORMATION_MESSAGE);
+        // JOptionPane.showMessageDialog(null, "No books found.", "Information",
+        // JOptionPane.INFORMATION_MESSAGE);
         // }
     }
 
@@ -624,8 +636,8 @@ public class StudentPanel {
         }
 
         // if (issuedBooks.isEmpty()) {
-        //     JOptionPane.showMessageDialog(null, "No issued books found.", "Information",
-        //             JOptionPane.INFORMATION_MESSAGE);
+        // JOptionPane.showMessageDialog(null, "No issued books found.", "Information",
+        // JOptionPane.INFORMATION_MESSAGE);
         // }
     }
 
@@ -639,8 +651,8 @@ public class StudentPanel {
         }
 
         // if (issuedBooks.isEmpty()) {
-        //     JOptionPane.showMessageDialog(null, "No issued books found.", "Information",
-        //             JOptionPane.INFORMATION_MESSAGE);
+        // JOptionPane.showMessageDialog(null, "No issued books found.", "Information",
+        // JOptionPane.INFORMATION_MESSAGE);
         // }
     }
 
@@ -650,14 +662,13 @@ public class StudentPanel {
         Student student = new Student();
         List<Object[]> requests = student.viewBookRequests(studentId);
 
-        for (Object[] row : requests) {
-            tableModel.addRow(row);
+        if (requests != null) {
+            for (Object[] row : requests) {
+                tableModel.addRow(row);
+            }
+        } else {
+            System.out.println("No requests found for student ID: " + studentId);
         }
-
-        // if (requests.isEmpty()) {
-        //     JOptionPane.showMessageDialog(null, "No book requests found.", "Information",
-        //             JOptionPane.INFORMATION_MESSAGE);
-        // }
     }
 
     // Helper method to refresh the available books table
@@ -671,8 +682,9 @@ public class StudentPanel {
         }
 
         // if (books.isEmpty()) {
-        //     JOptionPane.showMessageDialog(null, "No available books found.", "Information",
-        //             JOptionPane.INFORMATION_MESSAGE);
+        // JOptionPane.showMessageDialog(null, "No available books found.",
+        // "Information",
+        // JOptionPane.INFORMATION_MESSAGE);
         // }
     }
 
@@ -687,8 +699,8 @@ public class StudentPanel {
         }
 
         // if (holdRequests.isEmpty()) {
-        //     JOptionPane.showMessageDialog(null, "No hold requests found.", "Information",
-        //             JOptionPane.INFORMATION_MESSAGE);
+        // JOptionPane.showMessageDialog(null, "No hold requests found.", "Information",
+        // JOptionPane.INFORMATION_MESSAGE);
         // }
     }
 
@@ -703,12 +715,14 @@ public class StudentPanel {
         }
 
         // if (borrowedBooks.isEmpty()) {
-        //     JOptionPane.showMessageDialog(null, "No borrowed books found.", "Information",
-        //             JOptionPane.INFORMATION_MESSAGE);
+        // JOptionPane.showMessageDialog(null, "No borrowed books found.",
+        // "Information",
+        // JOptionPane.INFORMATION_MESSAGE);
         // }
     }
 
-    // Overloaded helper method to refresh the borrowed books table with a list of books
+    // Overloaded helper method to refresh the borrowed books table with a list of
+    // books
     private static void refreshBorrowedBooksTable(DefaultTableModel tableModel, List<Object[]> borrowedBooks) {
         tableModel.setRowCount(0); // Clear the table
 
@@ -716,10 +730,29 @@ public class StudentPanel {
             tableModel.addRow(row);
         }
 
-
-        
         if (borrowedBooks.isEmpty()) {
             JOptionPane.showMessageDialog(null, "No borrowed books found.", "Information",
+                    JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    // Helper method to refresh the notifications table
+    private static void refreshNotificationsTable(DefaultTableModel tableModel, int studentId) {
+        tableModel.setRowCount(0); // Clear the table
+        Student student = new Student();
+        List<Object[]> notifications = student.getNotifications(studentId);
+
+        for (Object[] notification : notifications) {
+            // Ensure the data is added in the correct order: Title, Message, Date
+            tableModel.addRow(new Object[] {
+                    notification[0], // Title
+                    notification[1], // Message
+                    notification[2] // Date
+            });
+        }
+
+        if (notifications.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No notifications available.", "Information",
                     JOptionPane.INFORMATION_MESSAGE);
         }
     }

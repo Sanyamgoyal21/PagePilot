@@ -12,7 +12,6 @@ public class Student {
     static final String USER = "root";
     static final String PASS = "Sanyam@123";
 
-    
     // Establish connection
     public static Connection connect() throws SQLException {
         return DriverManager.getConnection(DB_URL, USER, PASS);
@@ -250,7 +249,7 @@ public class Student {
 
     public static void requestNewBook(String bookTitle, String author, int studentId) {
         String sql = "INSERT INTO requests (student_id, type, book_title, author, reason, request_date, status) " +
-                "VALUES (?, 'New Book', ?, ?, NULL, CURDATE(), 'Pending')";
+                "VALUES (?, 'New Book', ?, ?, NULL, NOW(), 'Pending')";
         try (Connection con = connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setInt(1, studentId);
@@ -344,6 +343,29 @@ public class Student {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public List<Object[]> getNotifications(int studentId) {
+        String sql = "SELECT title, message, sent_at FROM notifications WHERE student_id = ? ORDER BY sent_at DESC";
+        List<Object[]> notifications = new ArrayList<>();
+
+        try (Connection con = connect();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setInt(1, studentId);
+
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    notifications.add(new Object[] {
+                            rs.getString("title"), // Title
+                            rs.getString("message"), // Message
+                            rs.getTimestamp("sent_at") // Date
+                    });
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return notifications;
     }
 
     public boolean borrowBook(int studentId, int bookId) {
@@ -474,8 +496,8 @@ public class Student {
     }
 
     public boolean requestNewBook(int studentId, String title, String author, String description) {
-        String sql = "INSERT INTO requests (student_id, title, author, description, status) " +
-                "VALUES (?, ?, ?, ?, 'pending')";
+        String sql = "INSERT INTO requests (student_id, book_title, author, description,request_date) " +
+                "VALUES (?, ?, ?, ?,NOW())";
 
         try (Connection con = Database.connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
@@ -492,24 +514,21 @@ public class Student {
     }
 
     public List<Object[]> viewBookRequests(int studentId) {
-        String sql = "SELECT id, title, author, description, request_date, status FROM book_requests WHERE student_id = ?";
-
         List<Object[]> requests = new ArrayList<>();
-        try (Connection con = Database.connect();
-                PreparedStatement pst = con.prepareStatement(sql)) {
+        String query = "SELECT id, book_title, author, description, request_date, status FROM requests WHERE student_id = ?";
+        try (Connection conn = Database.connect();
+                PreparedStatement pst = conn.prepareStatement(query)) {
             pst.setInt(1, studentId);
-
-            try (ResultSet rs = pst.executeQuery()) {
-                while (rs.next()) {
-                    requests.add(new Object[] {
-                            rs.getInt("id"),
-                            rs.getString("title"),
-                            rs.getString("author"),
-                            rs.getString("description"),
-                            rs.getDate("request_date"),
-                            rs.getString("status")
-                    });
-                }
+            ResultSet rs = pst.executeQuery();
+            while (rs.next()) {
+                requests.add(new Object[] {
+                        rs.getInt("id"),
+                        rs.getString("book_title"),
+                        rs.getString("author"),
+                        rs.getString("description"),
+                        rs.getDate("request_date"),
+                        rs.getString("status")
+                });
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -599,8 +618,8 @@ public class Student {
 
     public static boolean addStudent(String name, String email, String phone, String password) {
         String sql = "INSERT INTO student (name, email, phone, password, active, login_status) " +
-                    "VALUES (?, ?, ?, ?, TRUE, FALSE)";
-        
+                "VALUES (?, ?, ?, ?, TRUE, FALSE)";
+
         try (Connection con = Database.connect();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setString(1, name);
@@ -617,7 +636,7 @@ public class Student {
     public static boolean resetPassword(String username, String email, String newPassword) {
         String sql = "UPDATE student SET password = ? WHERE name = ? AND email = ? AND active = TRUE";
         try (Connection con = Database.connect();
-             PreparedStatement pst = con.prepareStatement(sql)) {
+                PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setString(1, newPassword);
             pst.setString(2, username);
             pst.setString(3, email);
@@ -632,7 +651,7 @@ public class Student {
     public static boolean verifyEmail(String username, String email) {
         String sql = "SELECT id FROM student WHERE name = ? AND email = ? AND active = TRUE";
         try (Connection con = Database.connect();
-             PreparedStatement pst = con.prepareStatement(sql)) {
+                PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setString(1, username);
             pst.setString(2, email);
             ResultSet rs = pst.executeQuery();

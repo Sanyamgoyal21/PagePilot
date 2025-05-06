@@ -120,14 +120,15 @@ public class Database {
                         ");";
                 queryExecute(conn, createTableIssueBooks);
 
-                String createTableNotification = "CREATE TABLE IF NOT EXISTS notification (" +
-                        "notification_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
+                String createTableNotification = "CREATE TABLE IF NOT EXISTS notifications (" +
+                        "notification_id INT AUTO_INCREMENT PRIMARY KEY," +
                         "student_id INT NOT NULL," +
                         "sender ENUM('librarian', 'admin') DEFAULT 'librarian'," +
                         "title VARCHAR(100)," +
                         "message TEXT NOT NULL," +
                         "sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-                        "is_read BOOLEAN DEFAULT FALSE" +
+                        "is_read BOOLEAN DEFAULT FALSE," +
+                        "FOREIGN KEY (student_id) REFERENCES student(id) ON DELETE CASCADE" +
                         ");";
                 queryExecute(conn, createTableNotification);
 
@@ -138,7 +139,7 @@ public class Database {
                         "book_title VARCHAR(255)," +
                         "author VARCHAR(255)," +
                         "reason TEXT," +
-                        "request_date DATE NOT NULL," +
+                        "request_date DATETIME NOT NULL," +
                         "status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending'," +
                         "description TEXT," +
                         "notes VARCHAR(255)," +
@@ -170,7 +171,6 @@ public class Database {
                         "status VARCHAR(50) DEFAULT 'Pending'," +
                         "FOREIGN KEY (student_id) REFERENCES student(id)," +
                         "FOREIGN KEY (book_id) REFERENCES books(id)" +
-                        
                         ");";
                 queryExecute(conn, createTableHoldRequests);
 

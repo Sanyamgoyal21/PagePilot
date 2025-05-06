@@ -170,6 +170,7 @@ public class Database {
                         "status VARCHAR(50) DEFAULT 'Pending'," +
                         "FOREIGN KEY (student_id) REFERENCES student(id)," +
                         "FOREIGN KEY (book_id) REFERENCES books(id)" +
+                        
                         ");";
                 queryExecute(conn, createTableHoldRequests);
 

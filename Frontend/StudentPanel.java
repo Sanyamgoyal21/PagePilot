@@ -716,6 +716,8 @@ public class StudentPanel {
             tableModel.addRow(row);
         }
 
+
+        
         if (borrowedBooks.isEmpty()) {
             JOptionPane.showMessageDialog(null, "No borrowed books found.", "Information",
                     JOptionPane.INFORMATION_MESSAGE);

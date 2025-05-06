@@ -1,205 +1,1154 @@
 package Frontend;
 
-import Backend.Student;
 import Backend.Librarian;
-import Backend.Admin;
 
 import javax.swing.*;
-import java.awt.event.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 
-public class LoginPanel {
-    private static void placeComponents(JPanel panel) {
-        panel.setLayout(null);
+public class LibrarianPanel {
+    public static void displayLibrarianPage() {
+        // Create the main frame for the Librarian Dashboard
+        JFrame librarianFrame = new JFrame("Librarian Dashboard");
+        librarianFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        librarianFrame.setExtendedState(JFrame.MAXIMIZED_BOTH); // Open in full-screen mode
+        librarianFrame.setLayout(new BorderLayout());
 
-        JLabel userLabel = new JLabel("ID");
-        JLabel passwordLabel = new JLabel("Password");
-        JLabel roleLabel = new JLabel("Role");
-        JTextField userText = new JTextField(20);
-        JPasswordField passwordText = new JPasswordField(20);
-        JButton loginButton = new JButton("Login");
-        JButton forgotPasswordButton = new JButton("Forgot Password?");
-        JLabel successLabel = new JLabel("");
+        // Left-side navigation panel
+        JPanel navigationPanel = new JPanel();
+        navigationPanel.setLayout(new GridLayout(8, 1, 5, 5)); // 8 buttons with spacing
+        navigationPanel.setBackground(new Color(220, 220, 220)); // Light gray background
+        navigationPanel.setPreferredSize(new Dimension(200, 0)); // Fixed width for navigation
 
-        // Create the dropdown/combobox
-        String[] userTypes = { "Student", "Librarian", "Admin" };
-        JComboBox<String> roleComboBox = new JComboBox<>(userTypes);
+        // Buttons for navigation
+        // JButton addViewDeleteBooksButton = new JButton("Add/View/Delete Books");
+        // JButton issueBooksButton = new JButton("Issue Book");
+        // JButton viewIssuedBooksButton = new JButton("View Issued Books");
+        // JButton returnBooksButton = new JButton("Return Books and Calculate Fines");
+        // JButton manageStudentRecordsButton = new JButton("Manage Student Records");
+        // JButton requestApprovalButton = new JButton("Request Approval");
+        // JButton viewOverdueBooksButton = new JButton("View Overdue Books and Notify Students");
+        // JButton logoutButton = new JButton("Logout");
 
-        // Set bounds for all components
-        roleLabel.setBounds(10, 20, 80, 25);
-        roleComboBox.setBounds(100, 20, 165, 25);
-        userLabel.setBounds(10, 50, 80, 25);
-        passwordLabel.setBounds(10, 80, 80, 25);
-        userText.setBounds(100, 50, 165, 25);
-        passwordText.setBounds(100, 80, 165, 25);
-        loginButton.setBounds(10, 110, 80, 25);
-        forgotPasswordButton.setBounds(100, 110, 150, 25);
-        successLabel.setBounds(10, 140, 300, 25);
 
-        // Add components to panel
-        panel.add(roleLabel);
-        panel.add(roleComboBox);
-        panel.add(userLabel);
-        panel.add(passwordLabel);
-        panel.add(userText);
-        panel.add(passwordText);
-        panel.add(loginButton);
-        panel.add(forgotPasswordButton);
-        panel.add(successLabel);
+        JButton addViewDeleteBooksButton = new JButton("Manage Books"); // Add/View/Delete Books
+        JButton issueBooksButton = new JButton("Issue Book");
+        JButton viewIssuedBooksButton = new JButton("Issued Books");
+        JButton returnBooksButton = new JButton("Return Book & Fines");
+        JButton manageStudentRecordsButton = new JButton("Student Records");
+        JButton requestApprovalButton = new JButton("Approval Requests");
+        JButton viewOverdueBooksButton = new JButton("Overdue Books & Notifications");
+        JButton logoutButton = new JButton("Log Out");
 
-        // Add action listener for the Login button
-        loginButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                String username = userText.getText();
-                String password = new String(passwordText.getPassword());
-                String selectedRole = (String) roleComboBox.getSelectedItem();
 
-                boolean loginSuccess = false;
 
-                switch (selectedRole) {
-                    case "Student":
-                        int studentId = Student.login(username, password); // Return student ID on successful login
-                        if (studentId != -1) {
-                            if (Student.isActive(studentId)) { // Check if the student is active
-                                loginSuccess = true;
-                                successLabel.setText("Login successful as Student!");
-                                StudentPanel.displayStudentPage(studentId); // Pass the student ID to StudentPanel
-                            } else {
-                                successLabel.setText("Access denied. Student account is inactive.");
-                            }
-                        }
-                        break;
+        // Add buttons to the navigation panel
+        navigationPanel.add(addViewDeleteBooksButton);
+        navigationPanel.add(issueBooksButton);
+        navigationPanel.add(viewIssuedBooksButton);
+        navigationPanel.add(returnBooksButton);
+        navigationPanel.add(manageStudentRecordsButton);
+        navigationPanel.add(requestApprovalButton);
+        navigationPanel.add(viewOverdueBooksButton);
+        navigationPanel.add(logoutButton);
 
-                    case "Librarian":
-                        if (Librarian.login(username, password)) {
-                            if (Librarian.isActive(username)) { // Check if the librarian is active
-                                loginSuccess = true;
-                                successLabel.setText("Login successful as Librarian!");
-                                LibrarianPanel.displayLibrarianPage(); // Redirect to LibrarianPanel
-                            } else {
-                                successLabel.setText("Access denied. Librarian account is inactive.");
-                            }
-                        }
-                        break;
+        // Main content area with CardLayout
+        JPanel contentPanel = new JPanel();
+        CardLayout cardLayout = new CardLayout();
+        contentPanel.setLayout(cardLayout);
 
-                    case "Admin":
-                        if (Admin.login(username, password)) {
-                                loginSuccess = true;
-                                successLabel.setText("Login successful as Admin!");
-                                AdminPanel.displayAdminPage(); // Redirect to AdminPanel
-                            }
-                        break;
-                }
-                if (!loginSuccess && successLabel.getText().isEmpty()) {
-                    successLabel.setText("Invalid username or password.");
-                }
+        // Placeholder Panel (Default Panel)
+        JPanel placeholderPanel = new JPanel();
+        JLabel placeholderLabel = new JLabel("Welcome to the Librarian Dashboard", SwingConstants.CENTER);
+        placeholderLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        placeholderPanel.setLayout(new BorderLayout());
+        placeholderPanel.add(placeholderLabel, BorderLayout.CENTER);
+
+        // Add/View/Delete Books Panel
+        JPanel addViewDeleteBooksPanel = createAddViewDeleteBooksPanel();
+
+        // Issue Books Panel
+        JPanel issueBooksPanel = createIssueBooksPanel();
+        contentPanel.add(issueBooksPanel, "IssueBooks");
+
+        // View Issued Books Panel
+        JPanel viewIssuedBooksPanel = createViewIssuedBooksPanel();
+        contentPanel.add(viewIssuedBooksPanel, "ViewIssuedBooks");
+
+        // Return Books Panel
+        JPanel returnBooksPanel = createReturnBooksPanel();
+
+        // Manage Student Records Panel
+        JPanel manageStudentRecordsPanel = createManageStudentRecordsPanel();
+        contentPanel.add(manageStudentRecordsPanel, "ManageStudentRecords");
+
+        // Request Approval Panel
+        JPanel requestApprovalPanel = createRequestApprovalPanel();
+        contentPanel.add(requestApprovalPanel, "RequestApproval");
+
+        // Placeholder panels for other features
+        JPanel viewOverdueBooksPanel = createViewOverdueBooksPanel();
+        contentPanel.add(viewOverdueBooksPanel, "ViewOverdueBooks");
+
+        // Add feature panels to the content panel
+        contentPanel.add(placeholderPanel, "Placeholder");
+        contentPanel.add(addViewDeleteBooksPanel, "AddViewDeleteBooks");
+        contentPanel.add(returnBooksPanel, "ReturnBooks");
+
+        // Add action listeners to buttons
+        addViewDeleteBooksButton.addActionListener(e -> cardLayout.show(contentPanel, "AddViewDeleteBooks"));
+        issueBooksButton.addActionListener(e -> cardLayout.show(contentPanel, "IssueBooks"));
+        viewIssuedBooksButton.addActionListener(e -> cardLayout.show(contentPanel, "ViewIssuedBooks"));
+        returnBooksButton.addActionListener(e -> cardLayout.show(contentPanel, "ReturnBooks"));
+        manageStudentRecordsButton.addActionListener(e -> cardLayout.show(contentPanel, "ManageStudentRecords"));
+        requestApprovalButton.addActionListener(e -> cardLayout.show(contentPanel, "RequestApproval"));
+        viewOverdueBooksButton.addActionListener(e -> cardLayout.show(contentPanel, "ViewOverdueBooks"));
+        logoutButton.addActionListener(e -> librarianFrame.dispose()); // Close the librarian dashboard
+
+        // Add navigation and content panels to the frame
+        librarianFrame.add(navigationPanel, BorderLayout.WEST);
+        librarianFrame.add(contentPanel, BorderLayout.CENTER);
+
+        // Show the placeholder panel by default
+        cardLayout.show(contentPanel, "Placeholder");
+
+        // Make the frame visible
+        librarianFrame.setVisible(true);
+    }
+
+    private static JPanel createAddViewDeleteBooksPanel() {
+        JPanel addViewDeleteBooksPanel = new JPanel(new BorderLayout());
+        DefaultTableModel tableModel = new DefaultTableModel(
+                new String[] { "ID", "Title", "Author", "Total Copies", "Available Copies" }, 0);
+        JTable bookTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(bookTable);
+        addViewDeleteBooksPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Add Book Form
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5); // Add padding between components
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Row 1: Title
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        formPanel.add(new JLabel("Title:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        JTextField titleField = new JTextField();
+        formPanel.add(titleField, gbc);
+
+        // Row 2: Author
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        formPanel.add(new JLabel("Author:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        JTextField authorField = new JTextField();
+        formPanel.add(authorField, gbc);
+
+        // Row 3: Total Copies
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        formPanel.add(new JLabel("Total Copies:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        JTextField totalCopiesField = new JTextField();
+        formPanel.add(totalCopiesField, gbc);
+
+        // Row 4: Available Copies
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        formPanel.add(new JLabel("Available Copies:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 3;
+        JTextField availableCopiesField = new JTextField();
+        formPanel.add(availableCopiesField, gbc);
+
+        // Row 5: Search Field
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.fill = GridBagConstraints.HORIZONTAL; // Allow horizontal expansion
+        gbc.weightx = 1.0; // Give the search field extra horizontal space
+        formPanel.add(new JLabel("Search (ID/Title/Author):"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 4;
+        JTextField searchField = new JTextField();
+        formPanel.add(searchField, gbc);
+
+        // Row 6: Buttons (Add/Update, Delete, Search)
+        JButton addBookButton = new JButton("Add/Update Book");
+        JButton deleteBookButton = new JButton("Delete Selected Book");
+        JButton searchBookButton = new JButton("Search Book");
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 3, 10, 0));
+        buttonPanel.add(addBookButton);
+        buttonPanel.add(deleteBookButton);
+        buttonPanel.add(searchBookButton);
+
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.gridwidth = 2; // Span across two columns
+        formPanel.add(buttonPanel, gbc);
+
+        addViewDeleteBooksPanel.add(formPanel, BorderLayout.SOUTH);
+
+        // Add action listeners for Add/Update, Delete, and Search buttons
+        addBookButton.addActionListener(e -> {
+            String title = titleField.getText().trim();
+            String author = authorField.getText().trim();
+            String totalCopiesText = totalCopiesField.getText().trim();
+            String availableCopiesText = availableCopiesField.getText().trim();
+
+            // Validation: Check if any field is empty
+            if (title.isEmpty() || author.isEmpty() || totalCopiesText.isEmpty() || availableCopiesText.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "All fields must be filled.", "Missing Field",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Parse numeric fields
+            int totalCopies;
+            int availableCopies;
+            try {
+                totalCopies = Integer.parseInt(totalCopiesText);
+                availableCopies = Integer.parseInt(availableCopiesText);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(null, "Total Copies and Available Copies must be numeric.",
+                        "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Add or update the book
+            Librarian librarian = new Librarian();
+            boolean success = librarian.addOrUpdateBook(title, author, totalCopies, availableCopies);
+            if (success) {
+                JOptionPane.showMessageDialog(null, "Book added/updated successfully!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                refreshBookTable(tableModel, null, null);
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to add/update the book.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        // Add action listener for the Forgot Password button
-        forgotPasswordButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                String selectedRole = (String) roleComboBox.getSelectedItem();
-                if (selectedRole.equals("Admin")) {
-                    JOptionPane.showMessageDialog(null, 
-                        "Please contact system administrator to reset admin password.",
-                        "Password Reset",
+        deleteBookButton.addActionListener(e -> {
+            int selectedRow = bookTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(null, "Please select a book to delete.", "No Selection",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int bookId = (int) tableModel.getValueAt(selectedRow, 0);
+            Librarian librarian = new Librarian();
+            boolean success = librarian.deleteBookById(bookId);
+
+            if (success) {
+                JOptionPane.showMessageDialog(null, "Book deleted successfully!", "Success",
                         JOptionPane.INFORMATION_MESSAGE);
+                refreshBookTable(tableModel, null, null);
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to delete the book.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        searchBookButton.addActionListener(e -> {
+            String searchValue = searchField.getText().trim();
+
+            // If the search field is empty, fetch and display all books
+            if (searchValue.isEmpty()) {
+                refreshBookTable(tableModel, null, null);
+                return;
+            }
+
+            Librarian librarian = new Librarian();
+            ResultSet rs;
+
+            // If the search value is numeric, search by ID
+            if (searchValue.matches("\\d+")) {
+                rs = librarian.viewBooks("id", searchValue);
+            } else {
+                // Otherwise, search by Title or Author
+                rs = librarian.viewBooks("title", searchValue);
+                if (!hasResults(rs)) { // If no results by Title, search by Author
+                    rs = librarian.viewBooks("author", searchValue);
+                }
+            }
+
+            // Refresh the table with the search results
+            if (!hasResults(rs)) {
+                JOptionPane.showMessageDialog(null, "No books found matching the search criteria.", "No Results",
+                        JOptionPane.WARNING_MESSAGE);
+            }
+            refreshBookTable(tableModel, rs, searchValue);
+        });
+
+        // Refresh book table
+        refreshBookTable(tableModel, null, null);
+
+        return addViewDeleteBooksPanel;
+    }
+
+    private static JPanel createIssueBooksPanel() {
+        JPanel issueBooksPanel = new JPanel(new BorderLayout());
+
+        // Table for displaying books
+        DefaultTableModel tableModel = new DefaultTableModel(
+                new String[] { "ID", "Title", "Author", "Total Copies", "Available Copies" }, 0);
+        JTable bookTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(bookTable);
+        issueBooksPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Form panel for issuing books
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Row 1: Book ID
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        formPanel.add(new JLabel("Book ID:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        JTextField bookIdField = new JTextField();
+        bookIdField.setEditable(true); // Allow editing
+        formPanel.add(bookIdField, gbc);
+
+        // Row 2: Title
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        formPanel.add(new JLabel("Title:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        JTextField titleField = new JTextField();
+        titleField.setEditable(true); // Allow editing
+        formPanel.add(titleField, gbc);
+
+        // Row 3: Author
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        formPanel.add(new JLabel("Author:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        JTextField authorField = new JTextField();
+        authorField.setEditable(true); // Allow editing
+        formPanel.add(authorField, gbc);
+
+        // Row 4: Student ID
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        formPanel.add(new JLabel("Student ID:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 3;
+        JTextField studentIdField = new JTextField();
+        formPanel.add(studentIdField, gbc);
+
+        // Row 5: Search Field
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.fill = GridBagConstraints.HORIZONTAL; // Allow horizontal expansion
+        gbc.weightx = 1.0; // Give the search field extra horizontal space
+        formPanel.add(new JLabel("Search (Student ID/Book ID/Title/Author):"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 4;
+        JTextField searchField = new JTextField();
+        searchField.setPreferredSize(new Dimension(300, 25)); // Set preferred size (width: 300px, height: 25px)
+        formPanel.add(searchField, gbc);
+
+        // Row 6: Buttons (Issue Book, Search)
+        JButton issueBookButton = new JButton("Issue Book");
+        JButton searchBookButton = new JButton("Search Book");
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 0));
+        buttonPanel.add(issueBookButton);
+        buttonPanel.add(searchBookButton);
+
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.gridwidth = 2; // Span across two columns
+        formPanel.add(buttonPanel, gbc);
+
+        issueBooksPanel.add(formPanel, BorderLayout.SOUTH);
+
+        // Add action listener for table row selection
+        bookTable.getSelectionModel().addListSelectionListener(e -> {
+            int selectedRow = bookTable.getSelectedRow();
+            if (selectedRow != -1) {
+                bookIdField.setText(String.valueOf(tableModel.getValueAt(selectedRow, 0)));
+                titleField.setText(String.valueOf(tableModel.getValueAt(selectedRow, 1)));
+                authorField.setText(String.valueOf(tableModel.getValueAt(selectedRow, 2)));
+            }
+        });
+
+        // Add action listener for the Issue Book button
+        issueBookButton.addActionListener(e -> {
+            String bookIdText = bookIdField.getText().trim();
+            String studentIdText = studentIdField.getText().trim();
+
+            // Validation: Check if a book is selected and Student ID is entered
+            if (bookIdText.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Please select a book to issue.", "No Selection",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (studentIdText.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Please enter the Student ID.", "Missing Field",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Parse numeric fields
+            int bookId;
+            int studentId;
+            try {
+                bookId = Integer.parseInt(bookIdText);
+                studentId = Integer.parseInt(studentIdText);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(null, "Book ID and Student ID must be numeric.", "Invalid Input",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Issue the book
+            Librarian librarian = new Librarian();
+            boolean success = librarian.issueBookToStudent(bookId, studentId);
+            if (success) {
+                JOptionPane.showMessageDialog(null, "Book issued successfully!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                refreshBookTable(tableModel, null, null); // Refresh the table
+            } else {
+                JOptionPane.showMessageDialog(null,
+                        "Failed to issue the book. Either the book is not available or the details are incorrect.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Add action listener for the Search Book button
+        searchBookButton.addActionListener(e -> {
+            String searchValue = searchField.getText().trim();
+
+            // If the search field is empty, fetch and display all books
+            if (searchValue.isEmpty()) {
+                refreshBookTable(tableModel, null, null);
+                return;
+            }
+
+            Librarian librarian = new Librarian();
+            ResultSet rs;
+
+            // If the search value is numeric, search by ID
+            if (searchValue.matches("\\d+")) {
+                rs = librarian.viewBooks("id", searchValue);
+            } else {
+                // Otherwise, search by Title or Author
+                rs = librarian.viewBooks("title", searchValue);
+                if (!hasResults(rs)) { // If no results by Title, search by Author
+                    rs = librarian.viewBooks("author", searchValue);
+                }
+            }
+
+            // Refresh the table with the search results
+            if (!hasResults(rs)) {
+                JOptionPane.showMessageDialog(null, "No books found matching the search criteria.", "No Results",
+                        JOptionPane.WARNING_MESSAGE);
+            }
+            refreshBookTable(tableModel, rs, searchValue);
+        });
+
+        // Refresh book table initially
+        refreshBookTable(tableModel, null, null);
+
+        return issueBooksPanel;
+    }
+
+    private static JPanel createViewIssuedBooksPanel() {
+        JPanel viewIssuedBooksPanel = new JPanel(new BorderLayout());
+
+        // Table for displaying issued books
+        DefaultTableModel tableModel = new DefaultTableModel(
+                new String[] { "Issue ID", "Book ID", "Title", "Author", "Student ID", "Issue Date", "Due Date" }, 0);
+        JTable issuedBooksTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(issuedBooksTable);
+        viewIssuedBooksPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Form panel for searching issued books
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Row 1: Search Field
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL; // Allow horizontal expansion
+        gbc.weightx = 1.0; // Give the search field extra horizontal space
+        formPanel.add(new JLabel("Search (Student ID/Book ID/Title/Author):"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        JTextField searchField = new JTextField();
+        searchField.setPreferredSize(new Dimension(300, 25)); // Set preferred size (width: 300px, height: 25px)
+        formPanel.add(searchField, gbc);
+
+        // Row 2: Search Button
+        JButton searchButton = new JButton("Search Issued Books");
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 2; // Span across two columns
+        formPanel.add(searchButton, gbc);
+
+        viewIssuedBooksPanel.add(formPanel, BorderLayout.SOUTH);
+
+        // Add action listener for the Search button
+        searchButton.addActionListener(e -> {
+            String searchValue = searchField.getText().trim();
+
+            // If the search field is empty, fetch and display all issued books
+            if (searchValue.isEmpty()) {
+                refreshIssuedBooksTable(tableModel, null, null);
+                JOptionPane.showMessageDialog(null, "Showing all issued books.", "Search Cleared",
+                        JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            Librarian librarian = new Librarian();
+            ResultSet rs;
+
+            // If the search value is numeric, search by Student ID or Book ID
+            if (searchValue.matches("\\d+")) {
+                rs = librarian.viewIssuedBooks("student_id", searchValue);
+                if (!hasResults(rs)) { // If no results by Student ID, search by Book ID
+                    rs = librarian.viewIssuedBooks("book_id", searchValue);
+                }
+            } else {
+                // Otherwise, search by Title or Author (case-insensitive)
+                rs = librarian.viewIssuedBooks("title", searchValue.toLowerCase());
+                if (!hasResults(rs)) { // If no results by Title, search by Author
+                    rs = librarian.viewIssuedBooks("author", searchValue.toLowerCase());
+                }
+            }
+
+            // Refresh the table with the search results
+            if (!hasResults(rs)) {
+                JOptionPane.showMessageDialog(null, "No issued books found matching the search criteria.", "No Results",
+                        JOptionPane.WARNING_MESSAGE);
+            } else {
+                refreshIssuedBooksTable(tableModel, rs, searchValue);
+            }
+
+            // Clear the search field after search
+            searchField.setText("");
+        });
+
+        // Refresh issued books table initially
+        refreshIssuedBooksTable(tableModel, null, null);
+
+        return viewIssuedBooksPanel;
+    }
+
+    private static JPanel createReturnBooksPanel() {
+        JPanel returnBooksPanel = new JPanel(new BorderLayout());
+
+        // Table for displaying issued books
+        DefaultTableModel tableModel = new DefaultTableModel(
+                new String[] { "Issue ID", "Book ID", "Title", "Author", "Student ID", "Issue Date", "Due Date", "Fine",
+                        "Status" },
+                0);
+        JTable issuedBooksTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(issuedBooksTable);
+        returnBooksPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Search bar
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        JTextField searchField = new JTextField();
+        JButton searchButton = new JButton("Search");
+        searchPanel.add(new JLabel("Search (Student ID/Title/Author/Status): "), BorderLayout.WEST);
+        searchPanel.add(searchField, BorderLayout.CENTER);
+        searchPanel.add(searchButton, BorderLayout.EAST);
+        returnBooksPanel.add(searchPanel, BorderLayout.NORTH);
+
+        // Button to return the selected book
+        JButton returnBookButton = new JButton("Return Book");
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(returnBookButton);
+        returnBooksPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add action listener for the Search button
+        searchButton.addActionListener(e -> {
+            String searchValue = searchField.getText().trim();
+            String searchBy = null;
+
+            if (searchValue.matches("\\d+")) {
+                searchBy = "student_id"; // Numeric input assumed to be Student ID
+            } else if (searchValue.equalsIgnoreCase("issued") || searchValue.equalsIgnoreCase("overdue")
+                    || searchValue.equalsIgnoreCase("returned")) {
+                searchBy = "status"; // Status input
+            } else {
+                searchBy = "title"; // Default to title search
+            }
+
+            Librarian librarian = new Librarian();
+            ResultSet rs = librarian.viewIssuedBooks(searchBy, searchValue);
+            refreshIssuedBooksTable(tableModel, rs, searchValue);
+        });
+
+        // Add action listener for the Return Book button
+        returnBookButton.addActionListener(e -> {
+            int selectedRow = issuedBooksTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(null, "Please select a book to return.", "No Selection",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Get the selected book details
+            int issueId = (int) tableModel.getValueAt(selectedRow, 0);
+            int bookId = (int) tableModel.getValueAt(selectedRow, 1);
+            String dueDateStr = String.valueOf(tableModel.getValueAt(selectedRow, 6));
+            String status = String.valueOf(tableModel.getValueAt(selectedRow, 8));
+
+            // Check if dueDateStr is null or empty
+            LocalDate dueDate = null;
+            if (dueDateStr != null && !dueDateStr.equals("null")) {
+                try {
+                    dueDate = LocalDate.parse(dueDateStr);
+                } catch (Exception ex) {
+                    dueDate = null; // Handle invalid date format gracefully
+                }
+            }
+
+            // Calculate the fine
+            LocalDate today = LocalDate.now();
+            int fine = 0;
+            if (dueDate != null && today.isAfter(dueDate)) {
+                long overdueDays = ChronoUnit.DAYS.between(dueDate, today);
+                fine = (int) overdueDays * 10; // ₹10 per day fine
+            }
+
+            // Confirm the return and fine
+            int confirm = JOptionPane.showConfirmDialog(null,
+                    "The fine for this book is ₹" + fine + ". Do you want to proceed?", "Confirm Return",
+                    JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) {
+                return;
+            }
+
+            // Return the book
+            Librarian librarian = new Librarian();
+            boolean success = librarian.returnBook(issueId, bookId, fine);
+            if (success) {
+                JOptionPane.showMessageDialog(null, "Book returned successfully! Fine: ₹" + fine, "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                refreshIssuedBooksTable(tableModel, null, null); // Refresh the table
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to return the book.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Refresh issued books table initially
+        refreshIssuedBooksTable(tableModel, null, null);
+
+        return returnBooksPanel;
+    }
+
+    private static JPanel createManageStudentRecordsPanel() {
+        JPanel manageStudentRecordsPanel = new JPanel(new BorderLayout());
+
+        // Table for displaying student records
+        DefaultTableModel tableModel = new DefaultTableModel(
+                new String[] { "Student ID", "Name", "Email", "Phone", "Active", "Total Fine" }, 0);
+        JTable studentTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(studentTable);
+        manageStudentRecordsPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Search bar
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        JTextField searchField = new JTextField();
+        JButton searchButton = new JButton("Search");
+        searchPanel.add(new JLabel("Search by Student ID: "), BorderLayout.WEST);
+        searchPanel.add(searchField, BorderLayout.CENTER);
+        searchPanel.add(searchButton, BorderLayout.EAST);
+        manageStudentRecordsPanel.add(searchPanel, BorderLayout.NORTH);
+
+        // Buttons for managing students
+        JButton toggleActiveButton = new JButton("Toggle Active Status");
+        JButton addStudentButton = new JButton("Add Student");
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(toggleActiveButton);
+        buttonPanel.add(addStudentButton);
+        manageStudentRecordsPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add action listener for the Search button
+        searchButton.addActionListener(e -> {
+            String searchValue = searchField.getText().trim();
+
+            if (searchValue.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Please enter a Student ID to search.", "Missing Input",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            Librarian librarian = new Librarian();
+            List<Object[]> studentData = librarian.viewStudents("student_id", searchValue);
+            refreshStudentTable(tableModel, studentData);
+        });
+
+        // Add action listener for the Toggle Active Status button
+        toggleActiveButton.addActionListener(e -> {
+            int selectedRow = studentTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(null, "Please select a student to toggle active status.", "No Selection",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int studentId = (int) tableModel.getValueAt(selectedRow, 0);
+            String currentStatus = String.valueOf(tableModel.getValueAt(selectedRow, 4));
+            boolean newStatus = currentStatus.equalsIgnoreCase("No");
+
+            Librarian librarian = new Librarian();
+            boolean success = librarian.updateStudentActiveStatus(studentId, newStatus);
+            if (success) {
+                JOptionPane.showMessageDialog(null, "Student active status updated successfully!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                refreshStudentTable(tableModel, null); // Refresh the table
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to update student active status.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Add action listener for the Add Student button
+        addStudentButton.addActionListener(e -> {
+            JTextField nameField = new JTextField();
+            JTextField emailField = new JTextField();
+            JTextField phoneField = new JTextField();
+            JPasswordField passwordField = new JPasswordField();
+
+            JPanel formPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+            formPanel.add(new JLabel("Name:"));
+            formPanel.add(nameField);
+            formPanel.add(new JLabel("Email:"));
+            formPanel.add(emailField);
+            formPanel.add(new JLabel("Phone:"));
+            formPanel.add(phoneField);
+            formPanel.add(new JLabel("Password:"));
+            formPanel.add(passwordField);
+
+            int result = JOptionPane.showConfirmDialog(null, formPanel, "Add Student", JOptionPane.OK_CANCEL_OPTION);
+            if (result == JOptionPane.OK_OPTION) {
+                String name = nameField.getText().trim();
+                String email = emailField.getText().trim();
+                String phone = phoneField.getText().trim();
+                String password = new String(passwordField.getPassword()).trim();
+
+                if (name.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
-                JDialog resetDialog = new JDialog((Frame)null, "Reset Password", true);
-                resetDialog.setLayout(new GridLayout(5, 2, 10, 10));
-                resetDialog.setSize(300, 200);
-
-                JTextField usernameField = new JTextField();
-                JTextField emailField = new JTextField();
-                JPasswordField newPasswordField = new JPasswordField();
-                JPasswordField confirmPasswordField = new JPasswordField();
-                JButton resetButton = new JButton("Reset Password");
-
-                resetDialog.add(new JLabel("Username:"));
-                resetDialog.add(usernameField);
-                resetDialog.add(new JLabel("Email:"));
-                resetDialog.add(emailField);
-                resetDialog.add(new JLabel("New Password:"));
-                resetDialog.add(newPasswordField);
-                resetDialog.add(new JLabel("Confirm Password:"));
-                resetDialog.add(confirmPasswordField);
-                resetDialog.add(new JLabel(""));
-                resetDialog.add(resetButton);
-
-                resetButton.addActionListener(event -> {
-                    String username = usernameField.getText().trim();
-                    String email = emailField.getText().trim();
-                    String newPassword = new String(newPasswordField.getPassword());
-                    String confirmPassword = new String(confirmPasswordField.getPassword());
-
-                    if (username.isEmpty() || email.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
-                        JOptionPane.showMessageDialog(resetDialog, 
-                            "All fields are required.",
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-
-                    if (!newPassword.equals(confirmPassword)) {
-                        JOptionPane.showMessageDialog(resetDialog, 
-                            "Passwords do not match.",
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-
-                    boolean verified = false;
-                    boolean reset = false;
-
-                    if (selectedRole.equals("Student")) {
-                        verified = Student.verifyEmail(username, email);
-                        if (verified) {
-                            reset = Student.resetPassword(username, email, newPassword);
-                        }
-                    } else if (selectedRole.equals("Librarian")) {
-                        verified = Librarian.verifyEmail(username, email);
-                        if (verified) {
-                            reset = Librarian.resetPassword(username, email, newPassword);
-                        }
-                    }
-
-                    if (!verified) {
-                        JOptionPane.showMessageDialog(resetDialog, 
-                            "Username and email do not match.",
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE);
-                    } else if (reset) {
-                        JOptionPane.showMessageDialog(resetDialog, 
-                            "Password reset successful!",
-                            "Success",
+                Librarian librarian = new Librarian();
+                boolean success = librarian.addStudent(name, email, phone, password);
+                if (success) {
+                    JOptionPane.showMessageDialog(null, "Student added successfully!", "Success",
                             JOptionPane.INFORMATION_MESSAGE);
-                        resetDialog.dispose();
-                    } else {
-                        JOptionPane.showMessageDialog(resetDialog, 
-                            "Failed to reset password. Please try again.",
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE);
-                    }
-                });
-
-                resetDialog.setLocationRelativeTo(null);
-                resetDialog.setVisible(true);
+                    refreshStudentTable(tableModel, null); // Refresh the table
+                } else {
+                    JOptionPane.showMessageDialog(null, "Failed to add student.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
+
+        // Refresh student table initially
+        refreshStudentTable(tableModel, null);
+
+        return manageStudentRecordsPanel;
+    }
+
+    private static JPanel createRequestApprovalPanel() {
+        JPanel requestApprovalPanel = new JPanel(new BorderLayout());
+
+        // Table for displaying requests
+        DefaultTableModel tableModel = new DefaultTableModel(
+                new String[] { "Request ID", "Student ID", "Book Title", "Author", "Reason/Description",
+                        "Request Date", "Status" },
+                0);
+        JTable requestsTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(requestsTable);
+        requestApprovalPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Buttons for approving or rejecting requests
+        JButton approveButton = new JButton("Approve");
+        JButton rejectButton = new JButton("Reject");
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(approveButton);
+        buttonPanel.add(rejectButton);
+        requestApprovalPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Refresh requests table initially
+        refreshRequestsTable(tableModel);
+
+        // Add action listener for the Approve button
+        approveButton.addActionListener(e -> {
+            int selectedRow = requestsTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(null, "Please select a request to approve.", "No Selection",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int requestId = (int) tableModel.getValueAt(selectedRow, 0);
+            String requestType = (String) tableModel.getValueAt(selectedRow, 2);
+
+            Librarian librarian = new Librarian();
+            boolean success = librarian.approveRequest(requestId, requestType);
+            if (success) {
+                JOptionPane.showMessageDialog(null, "Request approved successfully!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                refreshRequestsTable(tableModel); // Refresh the table
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to approve the request. Please try again.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Add action listener for the Reject button
+        rejectButton.addActionListener(e -> {
+            int selectedRow = requestsTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(null, "Please select a request to reject.", "No Selection",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int requestId = (int) tableModel.getValueAt(selectedRow, 0);
+
+            Librarian librarian = new Librarian();
+            boolean success = librarian.rejectRequest(requestId);
+            if (success) {
+                JOptionPane.showMessageDialog(null, "Request rejected successfully!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                refreshRequestsTable(tableModel); // Refresh the table
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to reject the request. Please try again.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        return requestApprovalPanel;
+    }
+
+    private static JPanel createViewOverdueBooksPanel() {
+        JPanel overdueBooksPanel = new JPanel(new BorderLayout());
+
+        // Create table model with columns
+        DefaultTableModel tableModel = new DefaultTableModel(
+            new String[] {
+                "Issue ID", "Book ID", "Title", "Author", 
+                "Student ID", "Issue Date", "Due Date", "Fine", "Status"  // Added Status column
+            }, 0
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+            
+            // Override getColumnClass to properly format date columns
+            @Override
+            public Class<?> getColumnClass(int column) {
+                switch (column) {
+                    case 0, 1, 4, 7: return Integer.class;
+                    case 5, 6: return java.util.Date.class;
+                    default: return String.class;
+                }
+            }
+        };
+
+        JTable overdueBooksTable = new JTable(tableModel);
+        overdueBooksTable.setAutoCreateRowSorter(true); // Enable sorting
+        JScrollPane scrollPane = new JScrollPane(overdueBooksTable);
+
+        // Search panel
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        String[] searchOptions = {"student_id", "book_id", "title", "author"};
+        JComboBox<String> searchByCombo = new JComboBox<>(searchOptions);
+        JTextField searchField = new JTextField(20);
+        JButton searchButton = new JButton("Search");
+        
+        searchPanel.add(new JLabel("Search by:"));
+        searchPanel.add(searchByCombo);
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton refreshButton = new JButton("Refresh");
+        JButton notifyButton = new JButton("Notify Student");
+        JButton updateFineButton = new JButton("Update Fines"); // Added update fines button
+        buttonPanel.add(refreshButton);
+        buttonPanel.add(notifyButton);
+        buttonPanel.add(updateFineButton);
+
+        // Layout
+        overdueBooksPanel.add(searchPanel, BorderLayout.NORTH);
+        overdueBooksPanel.add(scrollPane, BorderLayout.CENTER);
+        overdueBooksPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Search button action
+        searchButton.addActionListener(e -> {
+            String searchType = (String) searchByCombo.getSelectedItem();
+            String searchValue = searchField.getText().trim();
+            
+            if (!searchValue.isEmpty()) {
+                Librarian librarian = new Librarian();
+                List<Object[]> results = librarian.viewOverdueBooks(searchType, searchValue);
+                refreshOverdueBooksTable(tableModel, results);
+            } else {
+                refreshOverdueBooksTable(tableModel, null);
+            }
+        });
+
+        // Refresh button action
+        refreshButton.addActionListener(e -> {
+            updateOverdueBooksAndFines();  // First update overdue status and fines
+            refreshOverdueBooksTable(tableModel, null);  // Then refresh display
+        });
+
+        // Update fines button action
+        updateFineButton.addActionListener(e -> {
+            updateOverdueBooksAndFines();
+            refreshOverdueBooksTable(tableModel, null);
+            JOptionPane.showMessageDialog(null, 
+                "Fines have been updated for all overdue books.", 
+                "Fines Updated", 
+                JOptionPane.INFORMATION_MESSAGE);
+        });
+
+        // Notify button action
+        notifyButton.addActionListener(e -> {
+            int selectedRow = overdueBooksTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(null, 
+                    "Please select a book to notify the student.", 
+                    "No Selection", 
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Convert view index to model index if table is sorted
+            int modelRow = overdueBooksTable.convertRowIndexToModel(selectedRow);
+            
+            int studentId = (int) tableModel.getValueAt(modelRow, 4);
+            String bookTitle = (String) tableModel.getValueAt(modelRow, 2);
+            int fine = (int) tableModel.getValueAt(modelRow, 7);
+            java.util.Date dueDate = (java.util.Date) tableModel.getValueAt(modelRow, 6);
+
+            String message = String.format(
+                "Notification sent to Student ID: %d\n" +
+                "Book: %s\n" +
+                "Due Date: %s\n" +
+                "Fine Amount: ₹%d", 
+                studentId, bookTitle, dueDate.toString(), fine
+            );
+            
+            JOptionPane.showMessageDialog(null, 
+                message, 
+                "Notification Sent", 
+                JOptionPane.INFORMATION_MESSAGE);
+        });
+
+        // Initial data load with fine update
+        updateOverdueBooksAndFines();
+        refreshOverdueBooksTable(tableModel, null);
+
+        return overdueBooksPanel;
+    }
+
+    // Helper method to update overdue status and fines
+    private static void updateOverdueBooksAndFines() {
+        Librarian librarian = new Librarian();
+        try {
+            // First update the status of books to overdue if they are past due date
+            librarian.updateOverdueStatus();
+            // Then calculate and update fines for overdue books
+            librarian.updateFines();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(null,
+                "Error updating overdue books and fines: " + ex.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private static JPanel createFeaturePanel(String title) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout());
+        JLabel label = new JLabel(title, SwingConstants.CENTER);
+        label.setFont(new Font("Arial", Font.BOLD, 24));
+        panel.add(label, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private static void refreshBookTable(DefaultTableModel tableModel, ResultSet rs, String searchValue) {
+        tableModel.setRowCount(0); // Clear the table
+        Librarian librarian = new Librarian();
+
+        // If ResultSet is null, fetch all books
+        if (rs == null) {
+            rs = librarian.viewBooks(null, null);
+        }
+
+        try {
+            while (rs.next()) {
+                tableModel.addRow(new Object[] {
+                        rs.getInt("id"),
+                        rs.getString("title"),
+                        rs.getString("author"),
+                        rs.getInt("total_copies"),
+                        rs.getInt("available_copies")
+                });
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void refreshIssuedBooksTable(DefaultTableModel tableModel, ResultSet rs, String searchValue) {
+        tableModel.setRowCount(0); // Clear the table
+        Librarian librarian = new Librarian();
+
+        // If ResultSet is null, fetch all issued books
+        if (rs == null) {
+            rs = librarian.viewIssuedBooks(null, null);
+        }
+
+        try {
+            while (rs.next()) {
+                java.sql.Date dueDateSql = rs.getDate("due_date");
+                LocalDate dueDate = null;
+                if (dueDateSql != null) {
+                    dueDate = dueDateSql.toLocalDate();
+                }
+                LocalDate today = LocalDate.now();
+                String status = rs.getString("status");
+
+                // Update status to overdue if the due date has passed
+                if (status.equals("issued") && dueDate != null && today.isAfter(dueDate)) {
+                    status = "overdue";
+                    librarian.updateBookStatus(rs.getInt("issue_id"), "overdue");
+                }
+
+                tableModel.addRow(new Object[] {
+                        rs.getInt("issue_id"),
+                        rs.getInt("book_id"),
+                        rs.getString("title"),
+                        rs.getString("author"),
+                        rs.getInt("student_id"),
+                        rs.getDate("issue_date"),
+                        dueDateSql, // Use the original SQL Date object
+                        rs.getInt("fine"),
+                        status
+                });
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void refreshOverdueBooksTable(DefaultTableModel tableModel, List<Object[]> overdueBooks) {
+        tableModel.setRowCount(0); // Clear existing rows
+        Librarian librarian = new Librarian();
+
+        // If overdueBooks is null, fetch all overdue books
+        if (overdueBooks == null) {
+            overdueBooks = librarian.viewOverdueBooks(null, null);
+        }
+        
+        for (Object[] book : overdueBooks) {
+            tableModel.addRow(new Object[]{
+                book[0], // issue_id
+                book[1], // book_id
+                book[2], // title
+                book[3], // author 
+                book[4], // student_id
+                book[5], // issue_date
+                book[6], // due_date
+                book[7],  // fine
+                book[8]   // status
+            });
+        }
+
+        // Only show message if search was performed and no results found
+        // if (overdueBooks != null && overdueBooks.isEmpty()) {
+        //     JOptionPane.showMessageDialog(null, 
+        //         "No overdue books found.", 
+        //         "Information",
+        //         JOptionPane.INFORMATION_MESSAGE);
+        // }
+    }
+
+    private static void refreshStudentTable(DefaultTableModel tableModel, List<Object[]> studentData) {
+        tableModel.setRowCount(0); // Clear the table
+        Librarian librarian = new Librarian();
+
+        // If studentData is null, fetch all students
+        if (studentData == null) {
+            studentData = librarian.viewStudents(null, null);
+        }
+
+        for (Object[] row : studentData) {
+            tableModel.addRow(row);
+        }
+
+        if (studentData.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No student data found.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private static void refreshRequestsTable(DefaultTableModel tableModel) {
+        tableModel.setRowCount(0); // Clear the table
+        Librarian librarian = new Librarian();
+        List<Object[]> requests = librarian.viewRequests();
+
+        for (Object[] row : requests) {
+            tableModel.addRow(row);
+        }
+
+        if (requests.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No requests found.", "Information",
+                    JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private static boolean hasResults(ResultSet rs) {
+        try {
+            return rs != null && rs.isBeforeFirst();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("Login Form");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(300, 250); // Increased height to accommodate new component
-
-        JPanel panel = new JPanel();
-        frame.add(panel);
-        placeComponents(panel);
-
-        frame.setVisible(true);
+        SwingUtilities.invokeLater(() -> displayLibrarianPage());
     }
 }
